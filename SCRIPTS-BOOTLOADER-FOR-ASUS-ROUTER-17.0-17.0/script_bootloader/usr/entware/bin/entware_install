@@ -1,0 +1,285 @@
+#!/bin/sh
+#
+########## CHECK ASUS ROUTER MODEL ##########
+#
+ROUTER_MODEL="$(nvram get model)"
+#
+########## END ##########
+#
+#
+########## SET THE CUSTOM VARIABLES ##########
+#
+# 设置自定义变量
+# 当该程序运行结束，此处设置的变量自动取消
+#
+# NAME OF THE SERVICE
+# 服务名称
+SERVICE_NAME="ENTWARE"
+#
+# FUNCTION OF THE SERVICE
+# 服务功能
+SERVICE_FUNCTION="INSTALL"
+#
+# USB_MOUNT_POINT: The mount point of the USB flash drive
+# 设置自定义变量USB_MOUNT_POINT为U盘挂载点
+USB_MOUNT_POINT="$(nvram get script_usbmount | sed 's/\/script_bootloader.*//')"
+#
+# SBL_SYS_USR: The directory which contains all the external software resources (add-ons) related to SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_USR为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统外部软件资源目录，即插件目录
+SBL_SYS_USR="${USB_MOUNT_POINT}/script_bootloader/usr"
+#
+# PRIVATE_ROOT: The root directory for this program
+# 设置自定义变量PRIVATE_ROOT为此程序根目录
+PRIVATE_ROOT="${SBL_SYS_USR}/entware"
+#
+# PRIVATE_BIN: The directory which contains all the executable files related to this program
+# 设置自定义变量PRIVATE_BIN为此程序可执行文件目录
+PRIVATE_BIN="${PRIVATE_ROOT}/bin"
+#
+# PRIVATE_ETC: The directory which contains all the configuration files related to this program
+# 设置自定义变量PRIVATE_ETC为此程序配置文件目录
+PRIVATE_ETC="${PRIVATE_ROOT}/etc"
+#
+# PRIVATE_USR: The directory which contains all the external software resources related to this program
+# 设置自定义变量PRIVATE_USR为此程序外部软件资源目录
+PRIVATE_USR="${PRIVATE_ROOT}/usr"
+#
+# FILES_TO_COPY: The list of files that should be copied
+# 设置自定义变量FILES_TO_COPY为待复制文件列表
+FILES_TO_COPY="${PRIVATE_ETC}/files_to_copy.autosave"
+#
+########## END ##########
+#
+#
+########## NOTIFICATION ##########
+#
+echo -e "($(basename $0)): $$ *--------- ${SERVICE_FUNCTION} ${SERVICE_NAME} ON ${ROUTER_MODEL} ---------*"
+#
+########## END ##########
+#
+#
+########## PREPARE ENVIRONMENT ##########
+#
+# Avoid 'HSTS will be disabled' errors
+# 避免HSTS will be disabled错误
+echo "" > "/root/.wget-hsts"
+chmod 644 "/root/.wget-hsts"
+#
+# Take the appropriate way to make /opt available according to the type of /opt
+# 根据/opt的类型，采用适当方法使目录/opt可用
+if [ -L "/opt" ]
+then
+    # OPT_TARGET: The target of the symbolic link /opt
+    # 设置自定义变量OPT_TARGET为符号链接文件/opt的目标
+    OPT_TARGET="$(ls -al "/opt" | sed -E -n -e 's#.*->[[:space:]]+([^[:space:]]+.*)$#/\1#p')"
+    #
+    # Create symbolic link file ${OPT_TARGET}
+    # 创建符号链接文件${OPT_TARGET}
+    ln -fs "${USB_MOUNT_POINT}" "${OPT_TARGET}"
+    #
+    sleep 5
+    #
+elif [ -d "/opt" ]
+then
+    # If it is a directory, then copy all files except symbolic link files in /opt to ${USB_MOUNT_POINT} and mount ${USB_MOUNT_POINT} to /opt
+    # 如果是目录，则将目录/opt下全部非符号链接文件复制至目录${USB_MOUNT_POINT}，之后挂载目录${USB_MOUNT_POINT}至目录/opt
+    #
+    mkdir "${PRIVATE_ETC}"
+    ls -al "/opt" | sed -E -n -e 's/^[^l[:space:]]{10}.*[[:digit:]:]+[[:space:]]+(.*[^.])$/\1/p' > "${FILES_TO_COPY}"
+    sed -i 's#^#/opt/#' "${FILES_TO_COPY}"
+    cp -f "${FILES_TO_COPY}" "${FILES_TO_COPY}.stack"
+    #
+    while [ 1 ]
+    do
+        STACK_TOP="$(head -n 1 "${FILES_TO_COPY}.stack")"
+        if [ -n "${STACK_TOP}" ]
+        then
+            cp -rf "${STACK_TOP}" "${USB_MOUNT_POINT}"
+            sed -i '1d' "${FILES_TO_COPY}.stack"
+        else
+            rm -f "${FILES_TO_COPY}.stack"
+            break
+        fi
+    done
+    #
+    echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: FILES IN /opt ARE COPIED"
+    #
+    # Mount the USB flash drive to /opt
+    # 挂载U盘至目录/opt
+    mount "${USB_MOUNT_POINT}" "/opt"
+    #
+    sleep 5
+    #
+else
+    # Do nothing but prompt the user
+    # 如果/opt的类型不符合上述两种情况，则执行
+    echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: TYPE OF /opt IS UNKNOWN"
+    echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: ENVIRONMENT FOR ENTWARE CAN'T BE SET"
+    echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+    #
+    exit 1
+fi
+#
+########## END ##########
+#
+#
+########## INSTALL ENTWARE ##########
+#
+# Install Entware according to the architecture of the ASUS Router
+# 根据路由器架构，自动安装适当版本的Entware
+case "$(uname -m)" in
+    "aarch64")
+        if [ -e "${PRIVATE_USR}/entware_repo_aarch64-k3.10.tar.gz" ]
+        then
+            echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: OFFLINE PACKAGE HAS BEEN FOUND"
+            #
+            tar -xzvf "${PRIVATE_USR}/entware_repo_aarch64-k3.10.tar.gz" -C "${PRIVATE_USR}" > /dev/null 2>&1
+            #
+            if [ ${?} -ne 0 ]
+            then
+                echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: ${ARCHIVE_NAME} IS CORRUPT"
+                echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+                #
+                exit 4
+            fi
+            #
+            sleep 30
+            #
+            echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME} OFFLINE"
+            #
+            "${PRIVATE_BIN}/entware_arm_generic_installer_offline" "aarch64-k3.10"
+            #
+        else
+            echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME} ONLINE"
+            #
+            wget -O - "http://bin.entware.net/aarch64-k3.10/installer/generic.sh" | sh
+        fi
+        #
+        if [ ${?} -eq 0 ]
+        then
+            echo -e "($(basename $0)): $$ \033[1;42;37mSUCCESS\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+        else
+            echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+            #
+            exit 2
+        fi
+        ;;
+    "armv7l")
+        if [ -e "${PRIVATE_USR}/entware_repo_armv7sf-k2.6.tar.gz" ]
+        then
+            echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: OFFLINE PACKAGE HAS BEEN FOUND"
+            #
+            tar -xzvf "${PRIVATE_USR}/entware_repo_armv7sf-k2.6.tar.gz" -C "${PRIVATE_USR}" > /dev/null 2>&1
+            #
+            if [ ${?} -ne 0 ]
+            then
+                echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: ${ARCHIVE_NAME} IS CORRUPT"
+                echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+                #
+                exit 4
+            fi
+            #
+            sleep 30
+            #
+            echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME} OFFLINE"
+            #
+            "${PRIVATE_BIN}/entware_arm_generic_installer_offline" "armv7sf-k2.6"
+            #
+        else
+            echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME} ONLINE"
+            #
+            wget -O - "http://bin.entware.net/armv7sf-k2.6/installer/generic.sh" | sh
+        fi
+        #
+        if [ ${?} -eq 0 ]
+        then
+            echo -e "($(basename $0)): $$ \033[1;42;37mSUCCESS\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+        else
+            echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+            #
+            exit 2
+        fi
+        ;;
+    "mips")
+        if [ -e "${PRIVATE_USR}/entware_repo_mipsel.tar.gz" ]
+        then
+            echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: OFFLINE PACKAGE HAS BEEN FOUND"
+            #
+            tar -xzvf "${PRIVATE_USR}/entware_repo_mipsel.tar.gz" -C "${PRIVATE_USR}" > /dev/null 2>&1
+            #
+            if [ ${?} -ne 0 ]
+            then
+                echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: ${ARCHIVE_NAME} IS CORRUPT"
+                echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+                #
+                exit 4
+            fi
+            #
+            sleep 30
+            #
+            echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME} OFFLINE"
+            #
+            "${PRIVATE_BIN}/entware_mipsel_installer_offline"
+            #
+        else
+            echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME} ONLINE"
+            #
+            wget -O - "http://pkg.entware.net/binaries/mipsel/installer/installer.sh" | sh
+        fi
+        #
+        if [ ${?} -eq 0 ]
+        then
+            echo -e "($(basename $0)): $$ \033[1;42;37mSUCCESS\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+        else
+            echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+            #
+            exit 2
+        fi
+        ;;
+    *)
+        # Do nothing but prompt the user
+        # 如果路由器架构不符合上述三种情况，则执行
+        echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: ROUTER ARCHITECTURE IS UNKNOWN"
+        echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+        #
+        exit 2
+        ;;
+esac
+#
+########## END ##########
+#
+#
+########## COPY FILES FROM FIRMWARE ##########
+#
+cp -f "/etc/passwd" "${USB_MOUNT_POINT}/etc/passwd_from_firmware"
+cp -f "/etc/shadow" "${USB_MOUNT_POINT}/etc/shadow_from_firmware"
+#
+echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: FILES FROM FIRMWARE ARE COPIED"
+#
+########## END ##########
+#
+#
+########## COPY HOME ##########
+#
+# Check if HOME is already in the USB flash drive
+# 检查目录${USB_MOUNT_POINT}/home/root是否存在
+if [ ! -d "${USB_MOUNT_POINT}/home/root" ]
+then
+    # Copy /tmp/home/root to ${USB_MOUNT_POINT}/home
+    # 如果目录${USB_MOUNT_POINT}/home/root不存在，则执行
+    if [ ! -d "${USB_MOUNT_POINT}/home" ]
+    then
+        mkdir "${USB_MOUNT_POINT}/home"
+    fi
+    #
+    cp -rfH "/root" "${USB_MOUNT_POINT}/home"
+    echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: HOME IS COPIED"
+else
+    # Do nothing but prompt the user
+    # 如果目录${USB_MOUNT_POINT}/home/root存在，则执行
+    echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: HOME EXISTS"
+fi
+#
+exit 0
+#
+########## END ##########

@@ -1,0 +1,66 @@
+#!/bin/sh
+#
+########## SET THE CUSTOM VARIABLES ##########
+#
+# 设置自定义变量
+# 当该程序运行结束，此处设置的变量自动取消
+#
+# NAME OF THE SERVICE
+# 服务名称
+SERVICE_NAME="OVERTURE"
+#
+# FUNCTION OF THE SERVICE
+# 服务功能
+SERVICE_FUNCTION="DISABLE"
+#
+# USB_MOUNT_POINT: The mount point of the USB flash drive
+# 设置自定义变量USB_MOUNT_POINT为U盘挂载点
+USB_MOUNT_POINT="$(nvram get script_usbmount | /opt/bin/sed 's/\/script_bootloader.*//')"
+#
+# ENTWARE_ETC: The directory which contains all the configuration files installed by Entware
+# 设置自定义变量ENTWARE_ETC为Entware安装的配置文件目录
+ENTWARE_ETC="${USB_MOUNT_POINT}/etc"
+#
+# ENTWARE_DNSMASQD: The directory which contains all the configuration files used by dnsmasq
+# 设置自定义变量ENTWARE_DNSMASQD为dnsmasq配置文件目录
+ENTWARE_DNSMASQD="${ENTWARE_ETC}/dnsmasq.d"
+#
+# OVERTURE_PID_FILE: The path to overture.pid
+# 设置自定义变量OVERTURE_PID_FILE为文件overture.pid的绝对路径
+OVERTURE_PID_FILE="/var/run/overture.pid"
+#
+########## END ##########
+#
+#
+########## NOTIFICATION ##########
+#
+/opt/bin/echo -e "($(basename $0)): $$ *--------- ${SERVICE_FUNCTION} ${SERVICE_NAME} ---------*"
+#
+########## END ##########
+#
+#
+########## DISABLE OVERTURE ##########
+#
+for PID in $(/opt/bin/cat "${OVERTURE_PID_FILE}")
+do
+    /opt/bin/kill ${PID}
+done
+#
+/opt/bin/rm -f "${OVERTURE_PID_FILE}"
+#
+# Update DNS server
+# 更新DNS服务器
+/opt/bin/mv -f "/tmp/resolv.dnsmasq.bak" "/tmp/resolv.dnsmasq"
+/opt/bin/rm -f "${ENTWARE_DNSMASQD}/overture.conf"
+/opt/bin/dnsmasq.d_refresh > /dev/null 2>&1
+#
+########## END ##########
+#
+#
+########## NOTIFICATION ##########
+#
+/opt/bin/echo -e "($(basename $0)): $$ \033[1;42;37mSUCCESS\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+#
+exit 0
+#
+########## END ##########

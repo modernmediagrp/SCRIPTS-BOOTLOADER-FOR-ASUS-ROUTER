@@ -1,0 +1,175 @@
+#!/bin/sh
+#
+########## SET THE CUSTOM VARIABLES ##########
+#
+# 设置自定义变量
+# 当该程序运行结束，此处设置的变量自动取消
+#
+# USB_MOUNT_POINT: The mount point of the USB flash drive
+# 设置自定义变量USB_MOUNT_POINT为U盘挂载点
+USB_MOUNT_POINT="$(nvram get script_usbmount | /opt/bin/sed 's/\/script_bootloader.*//')"
+#
+# SBL_SYS_USR: The directory which contains all the external software resources (add-ons) related to SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_USR为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统外部软件资源目录，即插件目录
+SBL_SYS_USR="${USB_MOUNT_POINT}/script_bootloader/usr"
+#
+# PRIVATE_ROOT: The root directory for this program
+# 设置自定义变量PRIVATE_ROOT为此程序根目录
+PRIVATE_ROOT="${SBL_SYS_USR}/ali_ddns"
+#
+# PRIVATE_ETC: The directory which contains all the configuration files related to this program
+# 设置自定义变量PRIVATE_ETC为此程序配置文件目录
+PRIVATE_ETC="${PRIVATE_ROOT}/etc"
+#
+# PRIVATE_TMP: The directory which contains all the temporary files related to this program
+# 设置自定义变量PRIVATE_TMP为此程序临时文件目录
+PRIVATE_TMP="${PRIVATE_ROOT}/tmp"
+#
+# PRIVATE_USR: The directory which contains all the external software resources related to this program
+# 设置自定义变量PRIVATE_USR为此程序外部软件资源目录
+PRIVATE_USR="${PRIVATE_ROOT}/usr"
+#
+# WAN0_GW_IFNAME: The interface name of gateway
+# 设置自定义变量WAN0_GW_IFNAME为网关设备名
+WAN0_GW_IFNAME="$(nvram get wan0_gw_ifname)"
+#
+# SOURCE_OF_PUBLIC_IP_ADDRESS: The source of public IP address
+# 设置自定义变量SOURCE_OF_PUBLIC_IP_ADDRESS为公网IP地址来源
+SOURCE_OF_PUBLIC_IP_ADDRESS="whatismyip.akamai.com"
+#SOURCE_OF_PUBLIC_IP_ADDRESS="ident.me"
+#
+# The environment variables needed by aliyun-cli
+# aliyun-cli所需的环境变量
+export HOME="/root"
+#
+# Public parameters
+# 公共参数
+MODE="$(/opt/bin/sed -E -n -e 's#^MODE=\"([[:alnum:]]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+ACCESS_KEY_ID="$(/opt/bin/sed -E -n -e 's#^ACCESS_KEY_ID=\"([[:alnum:]]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+ACCESS_KEY_SECRET="$(/opt/bin/sed -E -n -e 's#^ACCESS_KEY_SECRET=\"([[:alnum:]]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+LANGUAGE="$(/opt/bin/sed -E -n -e 's#^LANGUAGE=\"([[:alnum:]]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+REGION="$(/opt/bin/sed -E -n -e 's#^REGION=\"([[:alpha:]-]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+#
+# Parameters for DescribeDomainRecords
+# DescribeDomainRecords所需参数
+DOMAIN_NAME="$(/opt/bin/sed -E -n -e 's#^DOMAIN_NAME=\"(.+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+RR_KEY_WORD="$(/opt/bin/sed -E -n -e 's#^RR_KEY_WORD=\"(.+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+TYPE="$(/opt/bin/sed -E -n -e 's#^TYPE=\"([[:alnum:]]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+#
+# Parameters for UpdateDomainRecord
+# UpdateDomainRecord所需参数
+RR="${RR_KEY_WORD}"
+RECORD_ID="$(/opt/bin/aliyun alidns DescribeDomainRecords --DomainName "${DOMAIN_NAME}" --RRKeyWord "${RR_KEY_WORD}" --Type "${TYPE}" --mode "${MODE}" --access-key-id "${ACCESS_KEY_ID}" --access-key-secret "${ACCESS_KEY_SECRET}" --language "${LANGUAGE}" --region "${REGION}" | /opt/bin/sed -E -n -e 's/^[[:space:]]*\"RecordId\":[[:space:]]*\"(.*)\".*/\1/p')"
+VALUE="$(/opt/bin/curl -s -4 "${SOURCE_OF_PUBLIC_IP_ADDRESS}")"
+#
+# FQDN: The FQDN of the target server
+# 设置自定义变量FQDN为目标服务器FQDN
+FQDN="${RR_KEY_WORD}.${DOMAIN_NAME}"
+#
+# MAIL_SMTP_SERVER: The SMTP server of the sender
+# 设置自定义变量MAIL_SMTP_SERVER为通知邮件发件人的SMTP服务器地址
+MAIL_SMTP_SERVER="$(/opt/bin/sed -E -n -e 's#^MAIL_SMTP_SERVER=\"(.+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+#
+# MAIL_PASSWORD: The password of sender
+# 设置自定义变量MAIL_PASSWORD为通知邮件发件人密码
+MAIL_PASSWORD="$(/opt/bin/sed -E -n -e 's#^MAIL_PASSWORD=\"([[:alnum:]]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+#
+# MAIL_FROM: The sender of the notification email
+# 设置自定义变量MAIL_FROM为通知邮件发件人
+MAIL_FROM="$(/opt/bin/sed -E -n -e 's#^MAIL_FROM=\"(.+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+#
+# MAIL_TO: The recipient of the notification email
+# 设置自定义变量MAIL_TO为通知邮件收件人
+MAIL_TO="$(/opt/bin/sed -E -n -e 's#^MAIL_TO=\"(.+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+#
+########## END ##########
+#
+#
+########## TEST IP ADDRESS AND UPDATE DNS RECORD ##########
+#
+# Check if the IP address of the router's WAN port is equal to the public IP address. If the answer is yes, update DNS record and exit. And if the answer is no, repeat the test up to 3 times. If all the answers are no, send an email as notification and exit.
+# 检查路由器WAN口IP地址是否为公网IP地址。如果是，则更新DNS记录，退出程序；如果不是，则重复测试三次。如三次全都不是，则发送通知邮件，退出程序
+#
+# FAIL_DATE: The date on which the 1st fail test of IP address happens
+# 设置自定义变量FAIL_DATE为首次IP地址测试失败的发生日期
+FAIL_DATE=""
+#
+# FAIL_COUNT: The count of fail tests of IP address
+# 设置自定义变量FAIL_COUNT为IP地址测试失败计数
+FAIL_COUNT=0
+#
+while [ ${FAIL_COUNT} -lt 3 ]
+do
+    # PUBLIC_IPV4_ADDRESS: The public IPv4 address
+    # 设置自定义变量PUBLIC_IPV4_ADDRESS为公网IPv4地址
+    PUBLIC_IPV4_ADDRESS="${VALUE}"
+    #
+    # PUBLIC_IPV6_ADDRESS: The public IPv6 address
+    # 设置自定义变量PUBLIC_IPV6_ADDRESS为公网IPv6地址
+    #PUBLIC_IPV6_ADDRESS="$(/opt/bin/curl -s -6 "${SOURCE_OF_PUBLIC_IP_ADDRESS}")"
+    #
+    # WAN_IPV4_ADDRESS: The IPv4 address of the router's WAN port
+    # 设置自定义变量WAN_IPV4_ADDRESS为路由器WAN口IPv4地址
+    WAN_IPV4_ADDRESS="$(ip address show dev "${WAN0_GW_IFNAME}" | /opt/bin/sed -E -n -e 's/^[[:space:]]*inet[[:space:]]*([[:digit:]]*\.[[:digit:]]*\.[[:digit:]]*\.[[:digit:]]*).*/\1/p')"
+    #
+    # WAN_IPV6_ADDRESS: The IPv6 address of the router's WAN port
+    # 设置自定义变量WAN_IPV6_ADDRESS为路由器WAN口IPv6地址
+    #WAN_IPV6_ADDRESS="$()"
+    #
+    # Check if ${WAN_IPV4_ADDRESS} is equal to ${PUBLIC_IPV4_ADDRESS}
+    # 检查${WAN_IPV4_ADDRESS}与${PUBLIC_IPV4_ADDRESS}是否相等
+    if [ "${WAN_IPV4_ADDRESS}" == "${PUBLIC_IPV4_ADDRESS}" ]
+    then
+        # Choose one of the following metheds to update DNS record
+        # 如果${WAN_IPV4_ADDRESS}与${PUBLIC_IPV4_ADDRESS}相等，则执行
+        #
+        RECORD_IPV4_ADDRESS="$(/opt/bin/aliyun alidns DescribeDomainRecords --DomainName "${DOMAIN_NAME}" --RRKeyWord "${RR_KEY_WORD}" --Type "${TYPE}" --mode "${MODE}" --access-key-id "${ACCESS_KEY_ID}" --access-key-secret "${ACCESS_KEY_SECRET}" --language "${LANGUAGE}" --region "${REGION}" | /opt/bin/sed -E -n -e 's/^[[:space:]]*\"Value\":[[:space:]]*\"(.*)\".*/\1/p')"
+        #
+        if [ "${PUBLIC_IPV4_ADDRESS}" != "${RECORD_IPV4_ADDRESS}" ]
+        then
+            # Update Domain Record in type A
+            # 更新域名A记录
+            /opt/bin/aliyun alidns UpdateDomainRecord --RR "${RR}" --RecordId "${RECORD_ID}" --Type "${TYPE}" --Value "${VALUE}" --mode "${MODE}" --access-key-id "${ACCESS_KEY_ID}" --access-key-secret "${ACCESS_KEY_SECRET}" --language "${LANGUAGE}" --region "${REGION}" --quiet
+            #
+            /opt/bin/echo -e "SUCCESS\n\n$(/opt/bin/date)\nFQDN: ${FQDN}\nPUBLIC IPV4 ADDRESS: ${PUBLIC_IPV4_ADDRESS}"
+        else
+            /opt/bin/echo -e "NO CHANGES\n\n$(/opt/bin/date)\nFQDN: ${FQDN}\nPUBLIC IPV4 ADDRESS: ${PUBLIC_IPV4_ADDRESS}"
+        fi
+        #
+        exit 0
+        #
+    else
+        # Check if ${FAIL_DATE} exists
+        # 检查${FAIL_DATE}是否存在
+        if [ -z "${FAIL_DATE}" ]
+        then
+            FAIL_DATE="$(/opt/bin/date)"
+        fi
+        #
+        # Add 1 to ${FAIL_COUNT}
+        # ${FAIL_COUNT}加1
+        FAIL_COUNT=$((${FAIL_COUNT}+1))
+        #
+        # Wait for 5 seconds
+        # 等待5秒
+        /opt/bin/sleep 5
+    fi
+done
+#
+# Send an email as notification
+# 如果${WAN_IPV4_ADDRESS}与${PUBLIC_IPV4_ADDRESS}不等，则执行
+/opt/bin/echo -e "FAILURE\n\n$(/opt/bin/date)\nFQDN: ${FQDN}\nPUBLIC IPV4 ADDRESS: ${PUBLIC_IPV4_ADDRESS}\nWAN IPV4 ADDRESS: ${WAN_IPV4_ADDRESS}"
+#
+# Prepare mail contents
+# 准备邮件内容
+MAIL_SUBJECT="DDNS ERROR: NO PUBLIC IP ADDRESS"
+MAIL_CONTENTS="${PRIVATE_USR}/NO_PUBLIC_IP_ADDRESS"
+/opt/bin/sed -e '1i\From:'"${MAIL_FROM}"'\nTo:'"${MAIL_TO}"'\nSubject:'"${MAIL_SUBJECT}"'\n\nDATE: '"${FAIL_DATE}"'\nFQDN: '"${FQDN}"'\nWAN_IPV4_ADDRESS: '"${WAN_IPV4_ADDRESS}"'\nPUBLIC_IPV4_ADDRESS: '"${PUBLIC_IPV4_ADDRESS}"'' "${MAIL_CONTENTS}" > "${PRIVATE_TMP}/mail.tmp"
+#
+# Send
+# 发送
+/opt/bin/curl -s --url "${MAIL_SMTP_SERVER}" --mail-from "${MAIL_FROM}" --mail-rcpt "${MAIL_TO}" --upload-file "${PRIVATE_TMP}/mail.tmp" --user "${MAIL_FROM}:${MAIL_PASSWORD}" > /dev/null 2>&1
+#
+exit 1
+#
+########## END ##########

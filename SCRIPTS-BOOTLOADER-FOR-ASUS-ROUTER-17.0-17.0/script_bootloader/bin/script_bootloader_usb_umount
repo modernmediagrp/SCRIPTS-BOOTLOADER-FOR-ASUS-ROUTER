@@ -1,0 +1,164 @@
+#!/bin/sh
+#
+# 此程序在卸载U盘前，结束从U盘中加载的可执行程序的进程，并消除Entware运行环境，防止卸载U盘失败
+#
+########## CHECK ASUS ROUTER MODEL ##########
+#
+ROUTER_MODEL="$(nvram get model)"
+#
+########## END ##########
+#
+#
+########## SET THE CUSTOM VARIABLES ##########
+#
+# 设置自定义变量
+# 当该程序运行结束，此处设置的变量自动取消
+#
+# NAME OF THE SERVICE
+# 服务名称
+SERVICE_NAME="SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER"
+#
+# FUNCTION OF THE SERVICE
+# 服务功能
+SERVICE_FUNCTION="SHUTDOWN"
+#
+# USB_MOUNT_POINT: The mount point of the USB flash drive
+# 设置自定义变量USB_MOUNT_POINT为U盘挂载点
+USB_MOUNT_POINT="$(nvram get script_usbmount | sed 's/\/script_bootloader.*//')"
+#
+# SBL_SYS_ROOT: The root directory for SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_ROOT为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统根目录
+SBL_SYS_ROOT="${USB_MOUNT_POINT}/script_bootloader"
+#
+# SBL_SYS_BIN: The directory which contains all the executable files related to SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_BIN为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统可执行文件目录
+SBL_SYS_BIN="${SBL_SYS_ROOT}/bin"
+#
+# SBL_SYS_ETC: The directory which contains all the configuration files related to SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_ETC为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统配置文件目录
+SBL_SYS_ETC="${SBL_SYS_ROOT}/etc"
+#
+# SBL_SYS_TMP: The directory which contains all the temporary files related to SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_TMP为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统临时文件目录
+SBL_SYS_TMP="${SBL_SYS_ROOT}/tmp"
+#
+# SBL_SYS_USR: The directory which contains all the external software resources (add-ons) related to SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_USR为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统外部软件资源目录，即插件目录
+SBL_SYS_USR="${SBL_SYS_ROOT}/usr"
+#
+# SBL_SYS_VAR: The directory which contains all the variable files related to SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_VAR为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统可变文件目录
+SBL_SYS_VAR="${SBL_SYS_ROOT}/var"
+#
+# SERVICES_TO_DISABLE: The list of running services that should be disabled
+# 设置自定义变量SERVICES_TO_DISABLE为待结束服务列表文件
+SERVICES_TO_DISABLE="${SBL_SYS_TMP}/services_to_disable.tmp"
+#
+########## END ##########
+#
+#
+########## LOAD FUNCTIONS ##########
+#
+checkAndLoadComponent()
+{
+    if [ -e "${1}" ]
+    then
+        "${1}"
+    fi
+}
+#
+########## END ##########
+#
+#
+########## NOTIFICATION ##########
+#
+logger -st "($(basename $0))" $$ "*--------- ${SERVICE_FUNCTION} ${SERVICE_NAME} ON ${ROUTER_MODEL} ---------*"
+#
+########## END ##########
+#
+#
+########## UNLOAD COMPONENTS ##########
+#
+# Set working directory to /tmp
+# 将工作目录设置为/tmp
+cd "/tmp"
+#
+# Disable MONIT MANAGEMENT SYSTEM and all its services
+# 禁用MONIT MANAGEMENT SYSTEM及其全部服务
+if [ "$(which monit)" == "/opt/bin/monit" ]
+then
+    monit stop all
+    sleep 5
+    #
+    monit quit
+    #
+    while [ -n "$(pidof monit)" ]
+    do
+        sleep 5
+    done
+    #
+    MONIT_ID_FILE="$(sed -E -n -e 's/^set[[:space:]]+idfile[[:space:]]+([^[:space:]]+)/\1/p' "/opt/etc/monitrc")"
+    if [ "${MONIT_ID_FILE}" == "/var/.monit.id" ]
+    then
+        rm -f "${MONIT_ID_FILE}"
+    fi
+    #
+    MONIT_STATE_FILE="$(sed -E -n -e 's/^set[[:space:]]+statefile[[:space:]]+([^[:space:]]+)/\1/p' "/opt/etc/monitrc")"
+    if [ "${MONIT_STATE_FILE}" == "/var/.monit.state" ]
+    then
+        rm -f "${MONIT_STATE_FILE}"
+    fi
+fi
+#
+# Disable all custom scripts managed by ${SBL_SYS_BIN}/list_of_user_custom_scripts
+# 禁用由${SBL_SYS_BIN}/list_of_user_custom_scripts管理的全部自定义脚本
+echo '#!/bin/sh' > "${SERVICES_TO_DISABLE}"
+echo "SBL_SYS_USR=\"${SBL_SYS_USR}\"" >> "${SERVICES_TO_DISABLE}"
+grep -e '^\"\${SBL_SYS_USR}' "${SBL_SYS_BIN}/list_of_user_custom_scripts" | sed 's/_enable/_disable/' >> "${SERVICES_TO_DISABLE}"
+#
+chmod 777 "${SERVICES_TO_DISABLE}"
+#
+"${SERVICES_TO_DISABLE}"
+#
+sleep 5
+#
+# Disable Entware
+# 禁用Entware
+checkAndLoadComponent "${SBL_SYS_USR}/entware/bin/entware_disable.service"
+#
+sync
+sleep 10
+#
+# Unmount directory home
+# 卸载目录home
+if [ -d "${USB_MOUNT_POINT}/home/root" ]
+then
+    umount -f "/tmp/home"
+    sleep 5
+fi
+#
+# Disable SWAP
+# 禁用SWAP
+checkAndLoadComponent "${SBL_SYS_USR}/swap/bin/swap_disable.service"
+#
+# Disable timezone
+# 禁用timezone
+checkAndLoadComponent "${SBL_SYS_USR}/timezone/bin/timezone_disable.service"
+#
+sync
+sleep 10
+sync
+sleep 10
+#
+########## END ##########
+#
+#
+########## NOTIFICATION ##########
+#
+logger -st "($(basename $0))" $$ "SUCCESS: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+#
+# Disable lock 2
+# 禁用二号锁
+rm -f "/var/run/script_bootloader.pid"
+#
+########## END ##########

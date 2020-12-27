@@ -1,0 +1,277 @@
+#!/bin/sh
+#
+# 此程序用于升级安装“华硕路由器开机自动运行程序系统”
+#
+########## CHECK ASUS ROUTER MODEL ##########
+#
+ROUTER_MODEL="$(nvram get model)"
+#
+########## END ##########
+#
+#
+########## SET THE CUSTOM VARIABLES ##########
+#
+# 设置自定义变量
+# 当该程序运行结束，此处设置的变量自动取消
+#
+# NAME OF THE SERVICE
+# 服务名称
+SERVICE_NAME="SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER"
+#
+# FUNCTION OF THE SERVICE
+# 服务功能
+SERVICE_FUNCTION="UPGRADE"
+#
+echo -e "($(basename $0)): $$ *--------- ${SERVICE_FUNCTION} ${SERVICE_NAME} ON ${ROUTER_MODEL} ---------*"
+#
+# USB_MOUNT_POINT: The mount point of the USB flash drive
+# 设置自定义变量USB_MOUNT_POINT为U盘挂载点
+if [ -n "$(nvram get script_usbmount)" ]
+then
+    echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: RESTORE SETTINGS"
+    #
+    USB_MOUNT_POINT="$(nvram get script_usbmount | sed 's/\/script_bootloader.*//')"
+    #
+    echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: EXECUTE cp -f \"${USB_MOUNT_POINT}/script_bootloader/bin/upgrade\" \"/tmp/sbl_upgrade\" && cd \"/tmp\" && \"/tmp/sbl_upgrade\" AFTER RESTART"
+    #
+    "/tmp/sbl_uninstall" > /dev/null 2>&1
+    #
+    exit 1
+    #
+else
+    USB_MOUNT_POINT_COUNT=$(find / -name 'script_bootloader' | wc -l)
+    #
+    case ${USB_MOUNT_POINT_COUNT} in
+        0)
+            echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: UNABLE TO LOCATE DIRECTORY script_bootloader"
+            echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+            #
+            exit 1
+            ;;
+        1)
+            USB_MOUNT_POINT="$(find / -name 'script_bootloader' | sed 's#/script_bootloader##')"
+            ;;
+        *)
+            echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: NUMBER OF DIRECTORY script_bootloader MUST BE ONE"
+            echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+            #
+            exit 2
+            ;;
+    esac
+fi
+#
+# SOURCE_DIRECTORY: The source directory to remove
+# 设置自定义变量SOURCE_DIRECTORY为删除起始目录
+SOURCE_DIRECTORY="${USB_MOUNT_POINT}"
+#
+# EXCLUDED_DIRECTORY: The target directory excluded
+# 设置自定义变量EXCLUDED_DIRECTORY为被排除目录
+EXCLUDED_DIRECTORY="${USB_MOUNT_POINT}/home"
+#
+# NAME OF THE ARCHIVE
+# 设置自定义变量ARCHIVE_NAME为包文件名
+ARCHIVE_NAME="sbl_setup.tar.gz"
+#
+# Check if ${EXCLUDED_DIRECTORY}/root/SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER*.tar.gz exists
+# 检查文件${EXCLUDED_DIRECTORY}/root/SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER*.tar.gz是否存在
+if [ -e "${EXCLUDED_DIRECTORY}/root"/SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER*.tar.gz ]
+then
+    echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: OFFLINE PACKAGE HAS BEEN FOUND"
+    #
+    UPGRADE_ONLINE="false"
+else
+    UPGRADE_ONLINE="true"
+    #
+    # DOWNLOAD_LINK: Download link of the latest SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+    # 设置自定义变量DOWNLOAD_LINK为最新版SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER的下载链接
+    wget -q -c -t 10 -T 120 -O "/tmp/sbl_download_link.html" --no-check-certificate "https://api.github.com/repos/JACK-THINK/SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER/releases/latest"
+    #
+    if [ ! -s "/tmp/sbl_download_link.html" ] || \
+    [ $(cat "/tmp/sbl_download_link.html" | wc -l) -lt 20 ]
+    then
+        echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: CONNECTION FAILED"
+        echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+        #
+        rm -f "/tmp/sbl_download_link.html"
+        #
+        exit 5
+    else
+        DOWNLOAD_LINK="$(sed -E -n -e 's/^[[:space:]]*\"tarball_url\":[[:space:]]*\"(.*)\".*/\1/p' "/tmp/sbl_download_link.html")"
+        rm -f "/tmp/sbl_download_link.html"
+    fi
+fi
+#
+# OPERATING_SYSTEM: Operating system of the ASUS Router
+# 设置自定义变量OPERATING_SYSTEM为华硕路由器系统
+OPERATING_SYSTEM="$(uname | tr '[A-Z]' '[a-z]')"
+#
+# ROUTER_ARCHITECTURE: Architecture of the ASUS Router
+# 设置自定义变量ROUTER_ARCHITECTURE为华硕路由器架构
+case "$(uname -m)" in
+    "aarch64")
+        ROUTER_ARCHITECTURE="arm64"
+        ;;
+    "armv7l")
+        ROUTER_ARCHITECTURE="arm"
+        ;;
+    "mips")
+        ROUTER_ARCHITECTURE="mipsle"
+        ;;
+    *)
+        # Do nothing but prompt the user
+        # 如果路由器架构不符合上述三种情况，则执行
+        echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: ROUTER ARCHITECTURE IS UNKNOWN"
+        #
+        echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+        #
+        exit 3
+        ;;
+esac
+#
+########## END ##########
+#
+#
+########## REMOVE SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER ##########
+#
+echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: REMOVE OUTDATED ${SERVICE_NAME}"
+#
+WORKING_PATH="$(dirname "${EXCLUDED_DIRECTORY}")"
+EXCLUDED_PATH="${EXCLUDED_DIRECTORY}"
+#
+while [ "${EXCLUDED_PATH}" != "${SOURCE_DIRECTORY}" ]
+do
+    EXCLUDED_PATH_NAME="$(basename "${EXCLUDED_PATH}")"
+    #
+    ls -A "${WORKING_PATH}" | grep -v '^'"${EXCLUDED_PATH_NAME}"'$' > "/tmp/files_to_remove.stack"
+    #
+    STACK_TOP="$(head -n 1 "/tmp/files_to_remove.stack")"
+    while [ -n "${STACK_TOP}" ]
+    do
+        #echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: REMOVE ${STACK_TOP}"
+        rm -rf "${WORKING_PATH}/${STACK_TOP}"
+        sed -i '1d' "/tmp/files_to_remove.stack"
+        STACK_TOP="$(head -n 1 "/tmp/files_to_remove.stack")"
+    done
+    rm -f "/tmp/files_to_remove.stack"
+    #
+    WORKING_PATH="$(dirname "${WORKING_PATH}")"
+    EXCLUDED_PATH="$(dirname "${EXCLUDED_PATH}")"
+done
+#
+########## END ##########
+#
+#
+########## INSTALL SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER ##########
+#
+echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: INSTALL LATEST ${SERVICE_NAME}"
+#
+if ${UPGRADE_ONLINE}
+then
+    # Download ${ARCHIVE_NAME} package
+    # 下载${ARCHIVE_NAME}包
+    wget -q -c -t 10 -T 120 -O "${USB_MOUNT_POINT}/${ARCHIVE_NAME}" --no-check-certificate "${DOWNLOAD_LINK}"
+    #
+    sleep 30
+    #
+    # Check if ${USB_MOUNT_POINT}/${ARCHIVE_NAME} exists
+    # 检查文件${USB_MOUNT_POINT}/${ARCHIVE_NAME}是否存在
+    if [ ! -s "${USB_MOUNT_POINT}/${ARCHIVE_NAME}" ]
+    then
+        echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: CONNECTION FAILED"
+        echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+        #
+        rm -f "${USB_MOUNT_POINT}/${ARCHIVE_NAME}"
+        #
+        exit 5
+    fi
+    #
+    DIR_PREFIX="JACK-THINK-"
+    #
+else
+    echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME} OFFLINE"
+    #
+    mv -f "${EXCLUDED_DIRECTORY}/root"/SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER*.tar.gz "${USB_MOUNT_POINT}/${ARCHIVE_NAME}"
+    #
+    DIR_PREFIX=""
+    #
+fi
+#
+# Untar ${ARCHIVE_NAME} package
+# 解压${ARCHIVE_NAME}包
+tar -xzvf "${USB_MOUNT_POINT}/${ARCHIVE_NAME}" -C "${USB_MOUNT_POINT}" > /dev/null 2>&1
+#
+if [ ${?} -ne 0 ]
+then
+    echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: ${ARCHIVE_NAME} IS CORRUPT"
+    echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+    #
+    rm -f "${USB_MOUNT_POINT}/${ARCHIVE_NAME}"
+    #
+    exit 4
+fi
+#
+sleep 30
+#
+# Move directory script_bootloader to directory ${USB_MOUNT_POINT}
+# 移动目录script_bootloader至目录${USB_MOUNT_POINT}
+mv -f "${USB_MOUNT_POINT}"/${DIR_PREFIX}SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER*/script_bootloader "${USB_MOUNT_POINT}"
+#
+sleep 10
+#
+# Remove directory SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER*
+# 删除目录SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER*
+rm -rf "${USB_MOUNT_POINT}"/${DIR_PREFIX}SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER*
+#
+# Remove ${ARCHIVE_NAME} package
+# 删除${ARCHIVE_NAME}包
+rm -f "${USB_MOUNT_POINT}/${ARCHIVE_NAME}"
+#
+# Change the owner and group of each FILE
+# 更改文件所有者
+chown -R 0:0 "${USB_MOUNT_POINT}/script_bootloader"
+#
+sleep 10
+#
+# Change the mode of the files
+# 更改文件权限
+chmod -R 777 "${USB_MOUNT_POINT}/script_bootloader"
+#
+sleep 10
+#
+# Start installation
+# 开始安装
+cd "/tmp"
+#
+echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: ${USB_MOUNT_POINT}/sbl_install_log will be generated.\n"
+#
+if [ -n "$(which tee)" ]
+then
+    "${USB_MOUNT_POINT}/script_bootloader/bin/install" 2>&1 | tee "/tmp/sbl_install_log"
+else
+    "${USB_MOUNT_POINT}/script_bootloader/bin/install" 2>&1 | "${USB_MOUNT_POINT}/script_bootloader/bin/gotee/gotee-${OPERATING_SYSTEM}-${ROUTER_ARCHITECTURE}" "/tmp/sbl_install_log"
+    #
+    # Temporary Solution: The code below is to solve the problem that gotee can't output the lines without \n, which makes no instruction given during the installation of the addons
+    # 临时解决方案：以下代码的存在是因为gotee不能输出没有\n的行，导致不显示插件安装提示信息
+    "${USB_MOUNT_POINT}/script_bootloader/bin/addons_install" | /opt/bin/tee -a "/tmp/sbl_install_log"
+    echo -e "($(basename $0)): $$ \033[1;42;37mSUCCESS\033[0m: STAGE 3"
+fi
+#
+mv -f "/tmp/sbl_install_log" "${USB_MOUNT_POINT}"
+#
+########## END ##########
+#
+#
+########## REBOOT ##########
+#
+# Reboot the router
+# 需使用reboot命令重启路由器，确保设置生效
+"$(nvram get script_usbumount)" > /dev/null 2>&1
+sleep 30
+umount -f "${USB_MOUNT_POINT}" > /dev/null 2>&1
+echo -e "($(basename $0)): $$ \033[1;42;37mSUCCESS\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+sync
+sleep 10
+#
+reboot
+#
+########## END ##########

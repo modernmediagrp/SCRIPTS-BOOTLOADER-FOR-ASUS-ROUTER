@@ -1,0 +1,523 @@
+#!/bin/sh
+#
+# 此程序用于安装“华硕路由器开机自动运行程序系统”
+#
+########## CHECK ASUS ROUTER MODEL ##########
+#
+ROUTER_MODEL="$(nvram get model)"
+#
+########## END ##########
+#
+#
+########## LOAD FUNCTIONS ##########
+#
+#R#doubleCheckAndConfirm()
+#R#{
+#R#    while [ 1 ]
+#R#    do
+#R#        local VALUE_1
+#R#        local VALUE_2
+#R#        #
+#R#        echo -ne "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: INPUT THE VALUE: "
+#R#        read VALUE_1
+#R#        echo -ne "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: INPUT THE VALUE AGAIN TO CONFIRM: "
+#R#        read VALUE_2
+#R#        #
+#R#        if [ "${VALUE_1}" == "${VALUE_2}" ]
+#R#        then
+#R#            eval ${1}="${VALUE_1}"
+#R#            break
+#R#        else
+#R#            echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: THE TWO VALUES ARE INCONSISTENT"
+#R#        fi
+#R#    done
+#R#}
+#
+checkAndExecute()
+{
+    local TARGET="${1}"
+    local EXIT_CODE_1=${2}
+    local EXIT_CODE_2=${3}
+    #
+    # Check if ${TARGET} exists
+    # 检查文件${TARGET}是否存在
+    if [ -e "${TARGET}" ]
+    then
+        # Invoke ${TARGET}
+        # 如果文件${TARGET}存在，则执行
+        "${TARGET}"
+        #
+        # Check if ${TARGET} returns 0
+        # 检查文件${TARGET}的返回值是否为0
+        if [ ${?} -ne 0 ]
+        then
+            # Stop and Exit
+            # 如果返回值不为0，则该程序终止
+            echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: STAGE 2"
+            #
+            exit ${EXIT_CODE_1}
+        fi
+        #
+    else
+        # Stop and Exit
+        # 如果文件${TARGET}不存在，则该程序终止
+        echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: CAN'T LOCATE ${TARGET}"
+        echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: STAGE 2"
+        #
+        exit ${EXIT_CODE_2}
+    fi
+}
+#
+########## END ##########
+#
+#
+########## SET THE CUSTOM VARIABLES ##########
+#
+# 设置自定义变量
+# 当该程序运行结束，此处设置的变量自动取消
+#
+# NAME OF THE SERVICE
+# 服务名称
+SERVICE_NAME="SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER"
+#
+# FUNCTION OF THE SERVICE
+# 服务功能
+SERVICE_FUNCTION="INSTALL"
+#
+# OPERATING_SYSTEM: Operating system of the ASUS Router
+# 设置自定义变量OPERATING_SYSTEM为华硕路由器系统
+OPERATING_SYSTEM="$(uname | tr '[A-Z]' '[a-z]')"
+#
+# ROUTER_ARCHITECTURE: Architecture of the ASUS Router
+# 设置自定义变量ROUTER_ARCHITECTURE为华硕路由器架构
+case "$(uname -m)" in
+    "aarch64")
+        ROUTER_ARCHITECTURE="arm64"
+        ;;
+    "armv7l")
+        ROUTER_ARCHITECTURE="arm"
+        ;;
+    "mips")
+        ROUTER_ARCHITECTURE="mipsle"
+        ;;
+    *)
+        # Do nothing but prompt the user
+        # 如果路由器架构不符合上述三种情况，则执行
+        echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: ROUTER ARCHITECTURE IS UNKNOWN"
+        #
+        echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+        #
+        exit 1
+        ;;
+esac
+#
+echo -e "($(basename $0)): $$ *--------- ${SERVICE_FUNCTION} ${SERVICE_NAME} ON ${ROUTER_MODEL} ---------*"
+#
+# USB_MOUNT_POINT: The mount point of the USB flash drive
+# 设置自定义变量USB_MOUNT_POINT为U盘挂载点
+USB_MOUNT_POINT_COUNT=$(find / -name 'script_bootloader' | wc -l)
+#
+case ${USB_MOUNT_POINT_COUNT} in
+    0)
+        echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: UNABLE TO LOCATE DIRECTORY script_bootloader"
+        echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+        #
+        exit 2
+        ;;
+    1)
+        USB_MOUNT_POINT="$(find / -name 'script_bootloader' | sed 's#/script_bootloader##')"
+        ;;
+    *)
+        echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: NUMBER OF DIRECTORY script_bootloader MUST BE ONE"
+        echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+        #
+        exit 3
+        ;;
+esac
+#
+# ENTWARE_BIN: The directory which contains all the common executable files installed by Entware
+# 设置自定义变量ENTWARE_BIN为Entware安装的普通可执行文件目录
+ENTWARE_BIN="${USB_MOUNT_POINT}/bin"
+#
+# SBL_SYS_ROOT: The root directory for SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_ROOT为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统根目录
+SBL_SYS_ROOT="${USB_MOUNT_POINT}/script_bootloader"
+#
+# SBL_SYS_BIN: The directory which contains all the executable files related to SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_BIN为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统可执行文件目录
+SBL_SYS_BIN="${SBL_SYS_ROOT}/bin"
+#
+# SBL_SYS_ETC: The directory which contains all the configuration files related to SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_ETC为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统配置文件目录
+SBL_SYS_ETC="${SBL_SYS_ROOT}/etc"
+#
+# SBL_SYS_TMP: The directory which contains all the temporary files related to SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_TMP为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统临时文件目录
+SBL_SYS_TMP="${SBL_SYS_ROOT}/tmp"
+#
+# SBL_SYS_USR: The directory which contains all the external software resources (add-ons) related to SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_USR为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统外部软件资源目录，即插件目录
+SBL_SYS_USR="${SBL_SYS_ROOT}/usr"
+#
+# SBL_SYS_VAR: The directory which contains all the variable files related to SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_VAR为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统可变文件目录
+SBL_SYS_VAR="${SBL_SYS_ROOT}/var"
+#
+# TEST_FMW_TEE: The value to show if tee exists in the firmware
+# 设置自定义变量TEST_FMW_TEE为固件内tee命令的测试值
+if [ -n "$(which tee)" ]
+then
+    TEST_FMW_TEE="false"
+else
+    TEST_FMW_TEE="true"
+fi
+#
+########## END ##########
+#
+#
+#R########### SAVE CREDENTIALS ##########
+#R##
+#R#while [ 1 ]
+#R#do
+#R#    echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: \033[4mUSERNAME\033[0m: login username of the router"
+#R#    doubleCheckAndConfirm ADMINUSER
+#R#    #
+#R#    echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: \033[4mPASSWORD\033[0m: login password of the router"
+#R#    doubleCheckAndConfirm ADMINPASSWORD
+#R#    #
+#R#    if [ "${ADMINUSER}" != "$(nvram get http_username)" ]
+#R#    then
+#R#        echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: INPUTS ARE NOT IDENTICAL TO THE INFORMATION SAVED IN THE ROUTER, PLEASE INPUT AGAIN"
+#R#    else
+#R#        echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: \033[4mUSERNAME\033[0m: ${ADMINUSER}"
+#R#        echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: \033[4mPASSWORD\033[0m: ${ADMINPASSWORD}"
+#R#        #
+#R#        echo -e "ADMINUSER=\"${ADMINUSER}\"" > "${SBL_SYS_ETC}/sbl_credentials"
+#R#        echo -e "ADMINPASSWORD=\"${ADMINPASSWORD}\"" >> "${SBL_SYS_ETC}/sbl_credentials"
+#R#        #
+#R#        nvram set sbl_username="${ADMINUSER}"
+#R#        nvram set sbl_password="${ADMINPASSWORD}"
+#R#        nvram commit
+#R#        #
+#R#        break
+#R#    fi
+#R#done
+#R##
+#R########### END ##########
+#R##
+#R##
+########## STAGE 1 ##########
+#
+echo -e "\033[1;45;37m############### STAGE 1: SET BOOT PARAMETERS ###############\033[0m"
+#
+sleep 10
+#
+# USB_MOUNT_SCRIPT: The script runs automatically when the USB flash drive is mounted
+# 设置自定义变量USB_MOUNT_SCRIPT为U盘挂载时自动运行文件
+USB_MOUNT_SCRIPT="${USB_MOUNT_POINT}/script_bootloader/bin/script_bootloader_usb_mount"
+#
+# USB_UMOUNT_SCRIPT: The script runs automatically when the USB flash drive is unmounted
+# 设置自定义变量USB_UMOUNT_SCRIPT为U盘卸载时自动运行文件
+USB_UMOUNT_SCRIPT="${USB_MOUNT_POINT}/script_bootloader/bin/script_bootloader_usb_umount"
+#
+# Check if ${USB_MOUNT_SCRIPT} and ${USB_UMOUNT_SCRIPT} exist
+# 检查文件${USB_MOUNT_SCRIPT}和${USB_UMOUNT_SCRIPT}是否存在
+if [ -e "${USB_MOUNT_SCRIPT}" ] && [ -e "${USB_UMOUNT_SCRIPT}" ]
+then
+    echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: ALL THE PREREQUISITES ARE MET"
+    #
+    # Set nvram variable "script_usbmount" and "script_usbumount"
+    # 如果两个文件都存在，则设置nvram变量script_usbmount和script_usbumount
+    #
+    # 使用nvram对变量script_usbmount进行设置。当U盘被挂载后，任何被该变量引用的可执行程序会自动执行
+    nvram set script_usbmount="${USB_MOUNT_SCRIPT}"
+    #
+    # 使用nvram对变量script_usbumount进行设置。当U盘被卸载前，任何被该变量引用的可执行程序会自动执行
+    nvram set script_usbumount="${USB_UMOUNT_SCRIPT}"
+    #
+    # Commit the changes
+    # 使用nvram命令对路由器进行设置后，必须执行nvram commit命令，才能将已作出的修改保存至路由器
+    nvram commit
+    #
+    if [ ${?} -eq 0 ]
+    then
+        echo -e "($(basename $0)): $$ \033[1;42;37mSUCCESS\033[0m: STAGE 1"
+    else
+        echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: STAGE 1"
+        #
+        exit 4
+    fi
+    #
+else
+    # Stop and Exit
+    # 如果两个文件不同时存在，则该程序终止
+    echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: NOT ALL THE PREREQUISITES ARE MET"
+    echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: STAGE 1"
+    #
+    exit 5
+fi
+#
+########## END ##########
+#
+#
+########## STAGE 2 ##########
+#
+echo -e "\033[1;45;37m############### STAGE 2: INSTALL ESSENTIAL COMPONENTS ###############\033[0m"
+#
+sleep 10
+#
+checkAndExecute "${SBL_SYS_USR}/swap/bin/swap_install" 6 7
+#
+sleep 10
+#
+checkAndExecute "${SBL_SYS_USR}/swap/bin/swap_enable.service" 8 9
+#
+sleep 10
+#
+checkAndExecute "${SBL_SYS_USR}/entware/bin/entware_install" 10 11
+#
+#R#cp -f "${SBL_SYS_ETC}/sbl_credentials" "/opt/etc"
+#
+sleep 10
+#
+# Check if ${USB_MOUNT_POINT}/home/root exists
+# 检查目录${USB_MOUNT_POINT}/home/root是否存在
+if [ -d "${USB_MOUNT_POINT}/home/root" ]
+then
+    # Mount ${USB_MOUNT_POINT}/home/ to /tmp/home/
+    # 如果目录${USB_MOUNT_POINT}/home/root/存在，则执行
+    mount "${USB_MOUNT_POINT}/home" "/tmp/home"
+    echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: HOME IS MOUNTED"
+    #
+else
+    # Do nothing but prompt the user
+    # 如果目录${USB_MOUNT_POINT}/home/root/不存在，则执行
+    echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: HOME CAN'T BE MOUNTED"
+    echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: STAGE 2"
+    #
+    exit 12
+fi
+#
+sleep 10
+#
+ENTWARE_ENVIRONMENT="/opt/etc/init.d/rc.unslung"
+#
+# Check if ${ENTWARE_ENVIRONMENT} exists
+# 检查文件${ENTWARE_ENVIRONMENT}是否存在
+if [ -e "${ENTWARE_ENVIRONMENT}" ]
+then
+    # Start ${ENTWARE_ENVIRONMENT}
+    # 如果文件${ENTWARE_ENVIRONMENT}存在，则执行
+    "${ENTWARE_ENVIRONMENT}" start
+    sleep 5
+    #
+    echo -e "($(basename $0)): $$ \033[1;42;37mSUCCESS\033[0m: ENABLE ENTWARE"
+    #
+else
+    # Do nothing but prompt the user
+    # 如果文件${ENTWARE_ENVIRONMENT}不存在，则执行
+    echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: CAN'T LOCATE ${ENTWARE_ENVIRONMENT}"
+    echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: STAGE 2"
+    #
+    exit 13
+fi
+#
+sleep 10
+#
+# Install zoneinfo
+# 安装zoneinfo
+/opt/bin/opkg install zoneinfo-africa
+/opt/bin/opkg install zoneinfo-asia
+/opt/bin/opkg install zoneinfo-atlantic
+/opt/bin/opkg install zoneinfo-australia-nz
+/opt/bin/opkg install zoneinfo-core
+/opt/bin/opkg install zoneinfo-europe
+/opt/bin/opkg install zoneinfo-india
+/opt/bin/opkg install zoneinfo-northamerica
+/opt/bin/opkg install zoneinfo-pacific
+/opt/bin/opkg install zoneinfo-poles
+/opt/bin/opkg install zoneinfo-simple
+/opt/bin/opkg install zoneinfo-southamerica
+#
+# Create Public directories
+# 创建公共目录
+for PUBLIC_DIRECTORY in "www"
+do
+    if [ ! -d "${USB_MOUNT_POINT}/${PUBLIC_DIRECTORY}" ]
+    then
+        mkdir "${USB_MOUNT_POINT}/${PUBLIC_DIRECTORY}"
+        echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: PUBLIC DIRECTORY ${PUBLIC_DIRECTORY} IS CREATED"
+    fi
+done
+#
+# Create Private directories
+# 创建私有目录
+for PRIVATE_DIRECTORY in "Developments" "Documents" "Downloads" "Music" "Pictures" "Shared" "Videos"
+do
+    if [ ! -d "${USB_MOUNT_POINT}/home/root/${PRIVATE_DIRECTORY}" ]
+    then
+        mkdir "${USB_MOUNT_POINT}/home/root/${PRIVATE_DIRECTORY}"
+        echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: PRIVATE DIRECTORY ${PRIVATE_DIRECTORY} IS CREATED"
+    fi
+done
+#
+sleep 10
+#
+checkAndExecute "${SBL_SYS_USR}/timezone/bin/timezone_install" 14 15
+#
+sleep 10
+#
+checkAndExecute "${SBL_SYS_USR}/timezone/bin/timezone_enable.service" 16 17
+#
+sleep 10
+#
+checkAndExecute "${SBL_SYS_USR}/dependency/bin/dependency_install" 18 19
+#
+sleep 10
+#
+checkAndExecute "${SBL_SYS_USR}/dependency/bin/dependency_enable.service" 20 21
+#
+sleep 10
+#
+checkAndExecute "${SBL_SYS_USR}/monit/bin/monit_install" 22 23
+#
+sleep 10
+#
+# Start MONIT MANAGEMENT SYSTEM
+# 启动MONIT MANAGEMENT SYSTEM
+/opt/etc/init.d/S*monit start
+#
+sleep 10
+#
+checkAndExecute "${SBL_SYS_USR}/dnsmasq.d/bin/dnsmasq.d_install" 24 25
+#
+sleep 10
+#
+checkAndExecute "${SBL_SYS_USR}/fwd/bin/fwd_install" 26 27
+#
+sleep 10
+#
+# Check if ${SBL_SYS_BIN}/auto_update_switch exists
+# 检查文件${SBL_SYS_BIN}/auto_update_switch是否存在
+if [ -e "${SBL_SYS_BIN}/auto_update_switch" ]
+then
+    # Invoke ${SBL_SYS_BIN}/auto_update_switch
+    # 如果文件${SBL_SYS_BIN}/auto_update_switch存在，则执行
+    "${SBL_SYS_BIN}/auto_update_switch" "disable" 2> /dev/null
+    #
+    # Check if ${SBL_SYS_BIN}/auto_update_switch returns 0
+    # 检查文件${SBL_SYS_BIN}/auto_update_switch的返回值是否为0
+    if [ ${?} -ne 0 ]
+    then
+        # Stop and Exit
+        # 如果返回值不为0，则该程序终止
+        echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: STAGE 2"
+        #
+        exit 28
+    fi
+    #
+else
+    # Stop and Exit
+    # 如果文件${SBL_SYS_BIN}/auto_update_switch不存在，则该程序终止
+    echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: CAN'T LOCATE ${SBL_SYS_BIN}/auto_update_switch"
+    echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: STAGE 2"
+    #
+    exit 29
+fi
+#
+sleep 10
+#
+# Check if ${SBL_SYS_ETC}/list_of_user_custom_scripts.template exists
+# 检查文件${SBL_SYS_ETC}/list_of_user_custom_scripts.template是否存在
+if [ -e "${SBL_SYS_ETC}/list_of_user_custom_scripts.template" ]
+then
+    cp -f "${SBL_SYS_ETC}/list_of_user_custom_scripts.template" "${SBL_SYS_BIN}/list_of_user_custom_scripts"
+    #
+    chmod 777 "${SBL_SYS_BIN}/list_of_user_custom_scripts"
+    #
+    # Modify ${SBL_SYS_BIN}/list_of_user_custom_scripts
+    # 修改文件${SBL_SYS_BIN}/list_of_user_custom_scripts
+    "${USB_MOUNT_POINT}/bin/sed" -i -e '/# NEXT SERVICE/i\# DEPENDENCY SERVICE\n\"${SBL_SYS_USR}/dependency/bin/dependency_enable.service\"\n#' "${SBL_SYS_BIN}/list_of_user_custom_scripts"
+    #
+else
+    # Stop and Exit
+    # 如果文件${SBL_SYS_ETC}/list_of_user_custom_scripts.template不存在，则该程序终止
+    echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: CAN'T LOCATE ${SBL_SYS_ETC}/list_of_user_custom_scripts.template"
+    echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: STAGE 2"
+    #
+    exit 30
+fi
+#
+sleep 10
+#
+echo -e "($(basename $0)): $$ \033[1;42;37mSUCCESS\033[0m: STAGE 2"
+#
+########## END ##########
+#
+#
+########## STAGE 3 ##########
+#
+echo -e "\033[1;45;37m############### STAGE 3: INSTALL ADDONS ###############\033[0m"
+#
+# Install essential tools
+# 安装必备工具
+for TOOL_NAME in "bcrypt-tool" "gohash" "gotee"
+do
+    cp -f "${SBL_SYS_BIN}/${TOOL_NAME}/${TOOL_NAME}-${OPERATING_SYSTEM}-${ROUTER_ARCHITECTURE}" "${ENTWARE_BIN}/${TOOL_NAME}"
+done
+#
+# Copy customized commands
+# 复制自定义命令
+for CMD_NAME in "restart_router" "shutdown_router" "uninstall" "upgrade"
+do
+    cp -f "${SBL_SYS_BIN}/${CMD_NAME}" "/tmp/sbl_${CMD_NAME}"
+done
+#
+# Disable amtm
+# 禁用amtm
+if [ -n "$(which amtm)" ]
+then
+    echo -e "alias amtm='echo -e \"\033[1;41;37mFAILURE\033[0m: COLLISION DETECTED\"'" >> "${USB_MOUNT_POINT}/etc/bashrc"
+    rm -rf "/jffs/addons/amtm"
+    touch "/jffs/addons/amtm"
+    chmod 000 "/jffs/addons/amtm"
+fi
+#
+# Temporary Solution: The 4-line code below is to solve the problem that gotee can't output the lines without \n, which makes no instruction given during the installation of the addons
+# 临时解决方案：以下4行代码的存在是因为gotee不能输出没有\n的行，导致不显示插件安装提示信息
+if ${TEST_FMW_TEE}
+then
+    exit 31
+fi
+#
+# Check if ${SBL_SYS_BIN}/addons_install exists
+# 检查文件${SBL_SYS_BIN}/addons_install是否存在
+if [ -e "${SBL_SYS_BIN}/addons_install" ]
+then
+    # Invoke ${SBL_SYS_BIN}/addons_install
+    # 如果文件${SBL_SYS_BIN}/addons_install存在，则执行${SBL_SYS_BIN}/addons_install
+    "${SBL_SYS_BIN}/addons_install"
+    #
+    # Check if ${SBL_SYS_BIN}/addons_install returns 0
+    # 检查文件${SBL_SYS_BIN}/addons_install的返回值是否为0
+    if [ ${?} -eq 0 ]
+    then
+        # Continue
+        # 如果返回值为0，则继续
+        echo -e "($(basename $0)): $$ \033[1;42;37mSUCCESS\033[0m: STAGE 3"
+        #
+    else
+        # Stop and Exit
+        # 如果返回值不为0，则该程序终止
+        echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: ERRORS ON ${SBL_SYS_BIN}/addons_install"
+        echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: STAGE 3"
+    fi
+    #
+else
+    # Stop and Exit
+    # 如果文件${SBL_SYS_BIN}/addons_install不存在，则该程序终止
+    echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: CAN'T LOCATE ${SBL_SYS_BIN}/addons_install"
+    echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: STAGE 3"
+fi
+#
+########## END ##########

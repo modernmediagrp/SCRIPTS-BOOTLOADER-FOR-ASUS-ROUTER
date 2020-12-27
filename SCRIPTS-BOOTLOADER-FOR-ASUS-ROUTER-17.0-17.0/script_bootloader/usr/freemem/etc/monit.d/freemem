@@ -1,0 +1,2 @@
+check program FREE_MEMORY path "/opt/script_bootloader/usr/freemem/bin/freemem_enable.service" every 120 cycles
+    if status != 0 then unmonitor

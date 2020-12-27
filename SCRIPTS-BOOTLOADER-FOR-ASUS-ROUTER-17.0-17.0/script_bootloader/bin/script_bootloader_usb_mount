@@ -1,0 +1,197 @@
+#!/bin/sh
+#
+# 此程序用于在确认路由器已经成功启动后，执行用户自定义程序列表，并准备Entware运行环境
+#
+########## PROHIBIT REDUNDANT INSTANCE ##########
+#
+# Enable lock 1
+# 启用一号锁
+chmod 000 "${0}"
+#
+ROUTER_MODEL="$(nvram get model)"
+#
+# NAME OF THE SERVICE
+# 服务名称
+SERVICE_NAME="SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER"
+#
+# FUNCTION OF THE SERVICE
+# 服务功能
+SERVICE_FUNCTION="BOOT"
+#
+# Detect lock 2
+# 检测二号锁
+if [ -e "/var/run/script_bootloader.pid" ]
+then
+    # Stop and Exit
+    # 如果文件/var/run/script_bootloader.pid存在，则该程序终止
+    logger -st "($(basename $0))" $$ "NOTICE: ${SERVICE_NAME} IS WORKING"
+    #
+    chmod 777 "${0}"
+    #
+    exit 1
+else
+    logger -st "($(basename $0))" $$ "*--------- ${SERVICE_FUNCTION} ${SERVICE_NAME} ON ${ROUTER_MODEL} ---------*"
+fi
+#
+########## END ##########
+#
+#
+########## CHECK ASUS ROUTER STATUS ##########
+#
+# Check if the router is ready for running user's custom scripts
+# 检查路由器是否已经准备好执行用户自定义程序
+#
+# Check it out every 30 seconds in 5 minutes
+# 每30秒检查1次，最多执行10次，最多用时5分钟
+COUNT=0
+while [ ${COUNT} -lt 10 ]
+do
+    SUCCESS_START_SERVICE=$(nvram get success_start_service)
+    #
+    if [ ${SUCCESS_START_SERVICE} -eq 1 ]
+    then
+        break
+        #
+    else
+        logger -st "($(basename $0))" $$ "NOTICE: ${ROUTER_MODEL} IS NOT READY, WAIT 30 SECONDS MORE"
+        sleep 30
+        #
+        COUNT=$((${COUNT}+1))
+    fi
+done
+#
+# Stop and Exit
+# 如果10次检查均为路由器没准备好执行程序，则该程序终止
+if [ ${SUCCESS_START_SERVICE} -ne 1 ]
+then
+    logger -st "($(basename $0))" $$ "NOTICE: ${ROUTER_MODEL} IS NOT READY"
+    logger -st "($(basename $0))" $$ "FAILURE: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+    #
+    chmod 777 "${0}"
+    #
+    exit 2
+fi
+#
+########## END ##########
+#
+#
+########## SET THE CUSTOM VARIABLES ##########
+#
+# 设置自定义变量
+# 当该程序运行结束，此处设置的变量自动取消
+#
+# USB_MOUNT_POINT: The mount point of the USB flash drive
+# 设置自定义变量USB_MOUNT_POINT为U盘挂载点
+USB_MOUNT_POINT="$(nvram get script_usbmount | sed 's/\/script_bootloader.*//')"
+#
+# SBL_SYS_ROOT: The root directory for SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_ROOT为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统根目录
+SBL_SYS_ROOT="${USB_MOUNT_POINT}/script_bootloader"
+#
+# SBL_SYS_BIN: The directory which contains all the executable files related to SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_BIN为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统可执行文件目录
+SBL_SYS_BIN="${SBL_SYS_ROOT}/bin"
+#
+# SBL_SYS_ETC: The directory which contains all the configuration files related to SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_ETC为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统配置文件目录
+SBL_SYS_ETC="${SBL_SYS_ROOT}/etc"
+#
+# SBL_SYS_TMP: The directory which contains all the temporary files related to SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_TMP为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统临时文件目录
+SBL_SYS_TMP="${SBL_SYS_ROOT}/tmp"
+#
+# SBL_SYS_USR: The directory which contains all the external software resources (add-ons) related to SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_USR为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统外部软件资源目录，即插件目录
+SBL_SYS_USR="${SBL_SYS_ROOT}/usr"
+#
+# SBL_SYS_VAR: The directory which contains all the variable files related to SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
+# 设置自定义变量SBL_SYS_VAR为SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER系统可变文件目录
+SBL_SYS_VAR="${SBL_SYS_ROOT}/var"
+#
+########## END ##########
+#
+#
+########## LOAD FUNCTIONS ##########
+#
+checkAndLoadComponent()
+{
+    if [ -e "${1}" ]
+    then
+        "${1}"
+    else
+        logger -st "($(basename $0))" $$ "${2}"
+    fi
+}
+#
+########## END ##########
+#
+#
+########## LOAD COMPONENTS ##########
+#
+# Set working directory to /tmp
+# 将工作目录设置为/tmp
+cd "/tmp"
+#
+# Set timezone by add-on timezone
+# 使用插件timezone设置时区
+checkAndLoadComponent "${SBL_SYS_USR}/timezone/bin/timezone_enable.service" "NOTICE: TIMEZONE IS NOT ADJUSTED"
+#
+# Enable SWAP
+# 启用SWAP
+checkAndLoadComponent "${SBL_SYS_USR}/swap/bin/swap_enable.service" "NOTICE: SWAP IS NOT ENABLED"
+#
+# Mount directory home
+# 挂载目录home
+if [ -d "${USB_MOUNT_POINT}/home/root" ]
+then
+    mount "${USB_MOUNT_POINT}/home" "/tmp/home"
+    sleep 10
+else
+    logger -st "($(basename $0))" $$ "NOTICE: HOME IS NOT MOUNTED"
+fi
+#
+# Enable Entware
+# 启用Entware
+checkAndLoadComponent "${SBL_SYS_USR}/entware/bin/entware_enable.service" "NOTICE: ENTWARE IS NOT ENABLED"
+#
+# Load custom scripts
+# 加载自定义脚本
+checkAndLoadComponent "${SBL_SYS_BIN}/list_of_user_custom_scripts" "NOTICE: CUSTOM SCRIPTS ARE NOT LOADED"
+#
+# Copy customized commands
+# 复制自定义命令
+for CMD_NAME in "restart_router" "shutdown_router" "uninstall" "upgrade"
+do
+    cp -f "${SBL_SYS_BIN}/${CMD_NAME}" "/tmp/sbl_${CMD_NAME}"
+done
+#
+########## END ##########
+#
+#
+########## MISCELLANEOUS FUNCTIONS ##########
+#
+# Auto update at 3:00 on 2nd day every month
+# 每月2日3:00自动更新
+AUTO_UPDATE="disable"
+if [ "${AUTO_UPDATE}" == "enable" ]
+then
+    echo "0 3 2 * * \"${SBL_SYS_BIN}/update\"" >> "/var/spool/cron/crontabs/$(nvram get sbl_username)"
+    #touch "/var/run/sbl_auto_update_enabled"
+fi
+#
+########## END ##########
+#
+#
+########## NOTIFICATION ##########
+#
+logger -st "($(basename $0))" $$ "SUCCESS: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+#
+# Enable lock 2
+# 启用二号锁
+echo "Enable lock 2" > "/var/run/script_bootloader.pid"
+#
+# Disable lock 1
+# 禁用一号锁
+chmod 777 "${0}"
+#
+########## END ##########

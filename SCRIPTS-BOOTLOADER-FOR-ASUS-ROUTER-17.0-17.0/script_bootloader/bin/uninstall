@@ -1,0 +1,90 @@
+#!/bin/sh
+#
+# 此程序用于卸载“华硕路由器开机自动运行程序系统”
+#
+########## CHECK ASUS ROUTER MODEL ##########
+#
+ROUTER_MODEL="$(nvram get model)"
+#
+########## END ##########
+#
+#
+########## SET THE CUSTOM VARIABLES ##########
+#
+# 设置自定义变量
+# 当该程序运行结束，此处设置的变量自动取消
+#
+# NAME OF THE SERVICE
+# 服务名称
+SERVICE_NAME="SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER"
+#
+# FUNCTION OF THE SERVICE
+# 服务功能
+SERVICE_FUNCTION="UNINSTALL"
+#
+# USB_MOUNT_POINT: The mount point of the USB flash drive
+# 设置自定义变量USB_MOUNT_POINT为U盘挂载点
+USB_MOUNT_POINT="$(nvram get script_usbmount | sed 's/\/script_bootloader.*//')"
+#
+########## END ##########
+#
+#
+########## NOTIFICATION ##########
+#
+echo -e "($(basename $0)): $$ *--------- ${SERVICE_FUNCTION} ${SERVICE_NAME} ON ${ROUTER_MODEL} ---------*"
+#
+########## END ##########
+#
+#
+########## TERMINATE ANYTHING RELATED ##########
+#
+# Enable amtm
+# 启用amtm
+if [ -n "$(which amtm)" ]
+then
+    sed -i '/^alias amtm=/d' "${USB_MOUNT_POINT}/etc/bashrc"
+    rm -rf "/jffs/addons/amtm"
+fi
+#
+"$(nvram get script_usbumount)"
+sleep 30
+umount -f "${USB_MOUNT_POINT}" > /dev/null 2>&1
+#
+echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: ANYTHING RELEVANT HAS BEEN TERMINATED"
+#
+########## END ##########
+#
+#
+########## ROUTER CONFIGURATION ##########
+#
+# When the USB flash drive is mounted, nothing will run automatically
+# 使用nvram对变量script_usbmount进行设置，将其恢复为默认状态
+nvram unset script_usbmount
+#
+# When the USB flash drive is unmounted, nothing will run automatically
+# 使用nvram对变量script_usbumount进行设置，将其恢复为默认状态
+nvram unset script_usbumount
+#
+# When the USB flash drive is unmounted, nothing will run automatically
+# 使用nvram对变量usb_ext_opt进行设置，将其恢复为默认状态
+nvram unset usb_ext_opt
+#
+# When the USB flash drive is unmounted, nothing will run automatically
+# 使用nvram对变量sbl_username进行设置，将其恢复为默认状态
+nvram unset sbl_username
+#
+# When the USB flash drive is unmounted, nothing will run automatically
+# 使用nvram对变量sbl_password进行设置，将其恢复为默认状态
+nvram unset sbl_password
+#
+# Commit the changes
+# 使用nvram命令对路由器进行设置后，必须执行nvram commit命令，才能将已作出的修改保存至路由器
+nvram commit
+#
+sync
+sleep 10
+echo -e "($(basename $0)): $$ \033[1;42;37mSUCCESS\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
+#
+reboot
+#
+########## END ##########
