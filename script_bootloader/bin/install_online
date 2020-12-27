@@ -54,9 +54,9 @@ fi
 # 设置自定义变量DOWNLOAD_LINK_PREFIX为最新版SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER的下载链接前缀
 if [ "${LOCATION}" == "CN" ]
 then
-    DOWNLOAD_LINK_PREFIX="https://cdn.jsdelivr.net/gh/JACK-THINK/SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER@latest/script_bootloader"
+    DOWNLOAD_LINK_PREFIX="https://cdn.jsdelivr.net/gh/modernmediagrp/SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER@latest/script_bootloader"
 else
-    DOWNLOAD_LINK_PREFIX="https://raw.githubusercontent.com/JACK-THINK/SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER/master/script_bootloader"
+    DOWNLOAD_LINK_PREFIX="https://raw.githubusercontent.com/modernmediagrp/SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER/master/script_bootloader"
 fi
 #
 # OPERATING_SYSTEM: Operating system of the ASUS Router
@@ -297,7 +297,7 @@ USB_MOUNT_POINT="$(mount | sed -r -n -e 's/.*[[:space:]]+([^[:space:]]*'"${USB_D
 #
 # DOWNLOAD_LINK: Download link of the latest SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
 # 设置自定义变量DOWNLOAD_LINK为最新版SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER的下载链接
-wget -c -t 10 -T 120 -O "/tmp/sbl_download_link.html" --no-check-certificate "https://api.github.com/repos/JACK-THINK/SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER/releases/latest"
+wget -c -t 10 -T 120 -O "/tmp/sbl_download_link.html" --no-check-certificate "https://api.github.com/repos/modernmediagrp/SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER/releases/latest"
 #
 if [ ! -s "/tmp/sbl_download_link.html" ] || \
 [ $(cat "/tmp/sbl_download_link.html" | wc -l) -lt 20 ]
