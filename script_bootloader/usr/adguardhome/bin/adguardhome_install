@@ -78,7 +78,7 @@ case "$(/opt/bin/uname -m)" in
         ROUTER_ARCHITECTURE="armv5"
         ;;
     "mips")
-        ROUTER_ARCHITECTURE="mipsle_softfloat"
+        ROUTER_ARCHITECTURE="mipsle"
         ;;
     *)
         # Do nothing but prompt the user

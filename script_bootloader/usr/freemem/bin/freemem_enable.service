@@ -2,10 +2,9 @@
 #
 ########## ENABLE FREEMEM ##########
 #
-START_TIME="$(/opt/bin/date +%T)"
-/opt/bin/echo -e "🚿 AT [${START_TIME}]\n"
-/opt/bin/printf "%18s %10s %10s %10s %10s %10s\n" "Total" "Used" "Free" "Shared" "Buffers" "Cached"
-free | /opt/bin/sed -n -e 's/Mem:    /Before: /' -e '2p'
+DATE_BEFORE="$(/opt/bin/date +%H:%M:%S)"
+/opt/bin/printf "%8s %9s %10s %10s %10s %10s %10s\n" "# Time #" "Total" "Used" "Free" "Shared" "Buffers" "Cached"
+free | /opt/bin/sed -n -e 's/Mem:    /'"${DATE_BEFORE}"'/' -e '2p'
 #
 # Sync
 # 将缓存写入磁盘
@@ -18,7 +17,8 @@ free | /opt/bin/sed -n -e 's/Mem:    /Before: /' -e '2p'
 # 清理内存
 /opt/bin/echo 1 > "/proc/sys/vm/drop_caches"
 #
-free | /opt/bin/sed -n -e 's/Mem:    /After:  /' -e '2p'
+DATE_AFTER="$(/opt/bin/date +%H:%M:%S)"
+free | /opt/bin/sed -n -e 's/Mem:    /'"${DATE_AFTER}"'/' -e '2p'
 #
 exit 0
 #
