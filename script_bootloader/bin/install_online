@@ -3,15 +3,15 @@
 ########## CHECK PREREQUISITES ##########
 #
 # NAME OF THE SERVICE
-# 服务名称
+
 SERVICE_NAME="SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER"
 #
 # FUNCTION OF THE SERVICE
-# 服务功能
+
 SERVICE_FUNCTION="ONLINE-INSTALL"
 #
 # PUBLIC_IPV4_ADDRESS: The public IPv4 address
-# 设置自定义变量PUBLIC_IPV4_ADDRESS为公网IPv4地址
+
 SOURCE_OF_PUBLIC_IP_ADDRESS="whatismyip.akamai.com"
 wget -q -c -t 10 -T 120 -O "/tmp/public_ipv4_address.html" --no-check-certificate "${SOURCE_OF_PUBLIC_IP_ADDRESS}"
 #
@@ -31,7 +31,7 @@ else
 fi
 #
 # LOCATION: The location of the public IPv4 address
-# 设置自定义变量LOCATION为公网IPv4地址的地理位置
+
 SOURCE_OF_LOCATION="http://api.ipaddress.com/iptocountry?ip"
 wget -q -c -t 10 -T 120 -O "/tmp/location.html" --no-check-certificate "${SOURCE_OF_LOCATION}=${PUBLIC_IPV4_ADDRESS}"
 #
@@ -51,20 +51,17 @@ else
 fi
 #
 # DOWNLOAD_LINK_PREFIX: The prefix of download link of the latest SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
-# 设置自定义变量DOWNLOAD_LINK_PREFIX为最新版SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER的下载链接前缀
-if [ "${LOCATION}" == "CN" ]
-then
-    DOWNLOAD_LINK_PREFIX="https://cdn.jsdelivr.net/gh/modernmediagrp/SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER@latest/script_bootloader"
-else
-    DOWNLOAD_LINK_PREFIX="https://raw.githubusercontent.com/modernmediagrp/SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER/master/script_bootloader"
-fi
+
+
+DOWNLOAD_LINK_PREFIX="https://raw.githubusercontent.com/JACK-THINK/SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER/master/script_bootloader"
+
 #
 # OPERATING_SYSTEM: Operating system of the ASUS Router
-# 设置自定义变量OPERATING_SYSTEM为华硕路由器系统
+
 OPERATING_SYSTEM="$(uname | tr '[A-Z]' '[a-z]')"
 #
 # ROUTER_ARCHITECTURE: Architecture of the ASUS Router
-# 设置自定义变量ROUTER_ARCHITECTURE为华硕路由器架构
+
 case "$(uname -m)" in
     "aarch64")
         ROUTER_ARCHITECTURE="arm64"
@@ -87,15 +84,15 @@ case "$(uname -m)" in
 esac
 #
 # Download checksum generator and checker
-# 下载checksum generator and checker
+
 wget -q -c -t 10 -T 120 -O "/tmp/gohash" --no-check-certificate "${DOWNLOAD_LINK_PREFIX}/bin/gohash/gohash-${OPERATING_SYSTEM}-${ROUTER_ARCHITECTURE}"
 #
 chmod 777 "/tmp/gohash"
 #
 # Check integrity of /tmp/gohash
-# 检查文件/tmp/gohash的完整性
+
 if [ ! -s "/tmp/gohash" ] || \
-[ "$(md5sum "/tmp/gohash" | sed -r -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" != "$(/tmp/gohash -a md5 "/tmp/gohash" | sed -r -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" ]
+[ "$(md5sum "/tmp/gohash" | sed -E -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" != "$(/tmp/gohash -a md5 "/tmp/gohash" | sed -E -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" ]
 then
     echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: CONNECTION FAILED"
     echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
@@ -107,15 +104,15 @@ then
 fi
 #
 # Download system update fingerprint of the latest SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
-# 下载最新版SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER的系统更新指纹
+
 wget -q -c -t 10 -T 120 -O "/tmp/sys_update_fingerprint_current" --no-check-certificate "${DOWNLOAD_LINK_PREFIX}/var/update/sys_update_fingerprint_current"
 #
 # CURRENT_FINGERPRINT: System update fingerprint of the current SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
-# 设置自定义变量CURRENT_FINGERPRINT为当前SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER的系统更新指纹
+
 CURRENT_FINGERPRINT="/tmp/sys_update_fingerprint_current"
 #
 # Check integrity of ${CURRENT_FINGERPRINT}
-# 检查文件${CURRENT_FINGERPRINT}的完整性
+
 if [ ! -e "${CURRENT_FINGERPRINT}" ] || \
 [ $(cat "${CURRENT_FINGERPRINT}" | wc -l) -lt 100 ]
 then
@@ -130,9 +127,9 @@ then
 fi
 #
 # Check integrity of /tmp/install_online
-# 检查文件/tmp/install_online的完整性
+
 if [ ! -s "/tmp/install_online" ] || \
-[ "$(/tmp/gohash -a sha256 "/tmp/install_online" | sed -r -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" != "$(grep 'bin/install_online$' "${CURRENT_FINGERPRINT}" | sed -r -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" ]
+[ "$(/tmp/gohash -a sha256 "/tmp/install_online" | sed -E -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" != "$(grep 'bin/install_online$' "${CURRENT_FINGERPRINT}" | sed -E -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" ]
 then
     echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: CONNECTION FAILED"
     echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
@@ -145,13 +142,13 @@ then
 fi
 #
 # Download prerequisite_checker
-# 下载文件prerequisite_checker
+
 wget -q -c -t 10 -T 120 -O "/tmp/prerequisite_checker" --no-check-certificate "${DOWNLOAD_LINK_PREFIX}/bin/prerequisite_checker"
 #
 # Check integrity of /tmp/prerequisite_checker
-# 检查文件/tmp/prerequisite_checker的完整性
+
 if [ ! -s "/tmp/prerequisite_checker" ] || \
-[ "$(/tmp/gohash -a sha256 "/tmp/prerequisite_checker" | sed -r -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" != "$(grep 'bin/prerequisite_checker$' "${CURRENT_FINGERPRINT}" | sed -r -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" ]
+[ "$(/tmp/gohash -a sha256 "/tmp/prerequisite_checker" | sed -E -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" != "$(grep 'bin/prerequisite_checker$' "${CURRENT_FINGERPRINT}" | sed -E -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" ]
 then
     echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: CONNECTION FAILED"
     echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
@@ -165,15 +162,15 @@ then
 fi
 #
 # Change the mode of /tmp/prerequisite_checker
-# 更改文件/tmp/prerequisite_checker权限
+
 chmod 777 "/tmp/prerequisite_checker"
 #
 # Run /tmp/prerequisite_checker
-# 执行/tmp/prerequisite_checker
+
 "/tmp/prerequisite_checker"
 #
 # Check if /tmp/prerequisite_checker returns 0
-# 检查/tmp/prerequisite_checker的返回值是否为0
+
 if [ ${?} -ne 0 ]
 then
     echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
@@ -208,7 +205,6 @@ do
     echo -n "Do you want to start installation right now? (YES/NO): "
     #
     # Read the input of user
-    # 读取用户输入值
     read INPUT_VALUE
     #
     case "$(echo "${INPUT_VALUE}" | tr '[A-Z]' '[a-z]')" in
@@ -244,7 +240,7 @@ wget -c -t 10 -T 120 -O "/tmp/drive_modifier" --no-check-certificate "${DOWNLOAD
 # Check integrity of /tmp/drive_modifier
 # 检查文件/tmp/drive_modifier的完整性
 if [ ! -s "/tmp/drive_modifier" ] || \
-[ "$(/tmp/gohash -a sha256 "/tmp/drive_modifier" | sed -r -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" != "$(grep 'bin/drive_modifier$' "${CURRENT_FINGERPRINT}" | sed -r -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" ]
+[ "$(/tmp/gohash -a sha256 "/tmp/drive_modifier" | sed -E -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" != "$(grep 'bin/drive_modifier$' "${CURRENT_FINGERPRINT}" | sed -E -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" ]
 then
     echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: CONNECTION FAILED"
     echo -e "($(basename $0)): $$ \033[1;41;37mFAILURE\033[0m: ${SERVICE_FUNCTION} ${SERVICE_NAME}"
@@ -288,16 +284,16 @@ fi
 #
 # USB_DRIVE_LABEL: Default label of the USB flash drive
 # 设置自定义变量USB_DRIVE_LABEL为U盘默认卷标
-USB_DRIVE_LABEL="$(sed -r -n -e 's/^USB_DRIVE_LABEL=\"(.*)\"/\1/p' "/tmp/drive_modifier")"
+USB_DRIVE_LABEL="$(sed -E -n -e 's/^USB_DRIVE_LABEL=\"(.*)\"/\1/p' "/tmp/drive_modifier")"
 rm -f "/tmp/drive_modifier"
 #
 # USB_MOUNT_POINT: The mount point of the USB flash drive
 # 设置自定义变量USB_MOUNT_POINT为U盘挂载点
-USB_MOUNT_POINT="$(mount | sed -r -n -e 's/.*[[:space:]]+([^[:space:]]*'"${USB_DRIVE_LABEL}"'[^[:space:]]*)[[:space:]]+.*/\1/p')"
+USB_MOUNT_POINT="$(mount | sed -E -n -e 's/.*[[:space:]]+([^[:space:]]*'"${USB_DRIVE_LABEL}"'[^[:space:]]*)[[:space:]]+.*/\1/p')"
 #
 # DOWNLOAD_LINK: Download link of the latest SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER
 # 设置自定义变量DOWNLOAD_LINK为最新版SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER的下载链接
-wget -c -t 10 -T 120 -O "/tmp/sbl_download_link.html" --no-check-certificate "https://api.github.com/repos/modernmediagrp/SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER/releases/latest"
+wget -c -t 10 -T 120 -O "/tmp/sbl_download_link.html" --no-check-certificate "https://api.github.com/repos/JACK-THINK/SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER/releases/latest"
 #
 if [ ! -s "/tmp/sbl_download_link.html" ] || \
 [ $(cat "/tmp/sbl_download_link.html" | wc -l) -lt 20 ]
@@ -312,7 +308,7 @@ then
     #
     exit 5
 else
-    DOWNLOAD_LINK="$(sed -r -n -e 's/^[[:space:]]*\"tarball_url\":[[:space:]]*\"(.*)\".*/\1/p' "/tmp/sbl_download_link.html")"
+    DOWNLOAD_LINK="$(sed -E -n -e 's/^[[:space:]]*\"tarball_url\":[[:space:]]*\"(.*)\".*/\1/p' "/tmp/sbl_download_link.html")"
     rm -f "/tmp/sbl_download_link.html"
 fi
 #
