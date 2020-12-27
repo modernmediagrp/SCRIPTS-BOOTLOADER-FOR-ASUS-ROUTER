@@ -55,7 +55,7 @@ then
     echo -e "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0m: UNABLE TO GET IP INFORMATION, USE SHANGHAI INSTEAD"
     TIMEZONE="Asia/Shanghai"
 else
-    TIMEZONE="$(sed -E -n -e 's#.*<timezone>(.*)</timezone>#\1#p' /tmp/ipinfo.xml)"
+    TIMEZONE="$(sed -r -n -e 's#.*<timezone>(.*)</timezone>#\1#p' /tmp/ipinfo.xml)"
 fi
 #
 # TIMEZONE_FILE: The target file of time zone

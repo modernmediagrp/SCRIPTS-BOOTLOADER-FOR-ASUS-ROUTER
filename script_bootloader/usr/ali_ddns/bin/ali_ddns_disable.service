@@ -35,22 +35,22 @@ export HOME="/root"
 #
 # Public parameters
 # 公共参数
-MODE="$(/opt/bin/sed -E -n -e 's#^MODE=\"([[:alnum:]]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
-ACCESS_KEY_ID="$(/opt/bin/sed -E -n -e 's#^ACCESS_KEY_ID=\"([[:alnum:]]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
-ACCESS_KEY_SECRET="$(/opt/bin/sed -E -n -e 's#^ACCESS_KEY_SECRET=\"([[:alnum:]]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
-LANGUAGE="$(/opt/bin/sed -E -n -e 's#^LANGUAGE=\"([[:alnum:]]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
-REGION="$(/opt/bin/sed -E -n -e 's#^REGION=\"([[:alpha:]-]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+MODE="$(/opt/bin/sed -r -n -e 's#^MODE=\"([[:alnum:]]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+ACCESS_KEY_ID="$(/opt/bin/sed -r -n -e 's#^ACCESS_KEY_ID=\"([[:alnum:]]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+ACCESS_KEY_SECRET="$(/opt/bin/sed -r -n -e 's#^ACCESS_KEY_SECRET=\"([[:alnum:]]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+LANGUAGE="$(/opt/bin/sed -r -n -e 's#^LANGUAGE=\"([[:alnum:]]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+REGION="$(/opt/bin/sed -r -n -e 's#^REGION=\"([[:alpha:]-]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
 #
 # Parameters for DescribeDomainRecords
 # DescribeDomainRecords所需参数
-DOMAIN_NAME="$(/opt/bin/sed -E -n -e 's#^DOMAIN_NAME=\"(.+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
-RR_KEY_WORD="$(/opt/bin/sed -E -n -e 's#^RR_KEY_WORD=\"(.+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
-TYPE="$(/opt/bin/sed -E -n -e 's#^TYPE=\"([[:alnum:]]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+DOMAIN_NAME="$(/opt/bin/sed -r -n -e 's#^DOMAIN_NAME=\"(.+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+RR_KEY_WORD="$(/opt/bin/sed -r -n -e 's#^RR_KEY_WORD=\"(.+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
+TYPE="$(/opt/bin/sed -r -n -e 's#^TYPE=\"([[:alnum:]]+)\"#\1#p' "${PRIVATE_ETC}/ali_ddns.config")"
 #
 # Parameters for UpdateDomainRecord
 # UpdateDomainRecord所需参数
 RR="${RR_KEY_WORD}"
-RECORD_ID="$(/opt/bin/aliyun alidns DescribeDomainRecords --DomainName "${DOMAIN_NAME}" --RRKeyWord "${RR_KEY_WORD}" --Type "${TYPE}" --mode "${MODE}" --access-key-id "${ACCESS_KEY_ID}" --access-key-secret "${ACCESS_KEY_SECRET}" --language "${LANGUAGE}" --region "${REGION}" | /opt/bin/sed -E -n -e 's/^[[:space:]]*\"RecordId\":[[:space:]]*\"(.*)\".*/\1/p')"
+RECORD_ID="$(/opt/bin/aliyun alidns DescribeDomainRecords --DomainName "${DOMAIN_NAME}" --RRKeyWord "${RR_KEY_WORD}" --Type "${TYPE}" --mode "${MODE}" --access-key-id "${ACCESS_KEY_ID}" --access-key-secret "${ACCESS_KEY_SECRET}" --language "${LANGUAGE}" --region "${REGION}" | /opt/bin/sed -r -n -e 's/^[[:space:]]*\"RecordId\":[[:space:]]*\"(.*)\".*/\1/p')"
 VALUE="8.8.8.8"
 #
 ########## END ##########

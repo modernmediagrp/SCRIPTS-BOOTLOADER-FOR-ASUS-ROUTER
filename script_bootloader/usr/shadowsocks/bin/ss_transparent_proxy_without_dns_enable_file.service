@@ -31,19 +31,19 @@ SS_REDIR_PID_FILE="/var/run/ss_redir.pid"
 #
 # SERVER_DOMAIN: Domain of the SS-SERVER
 # 设置自定义变量SERVER_DOMAIN为SS-SERVER的域名
-SERVER_DOMAIN="$(/opt/bin/sed -E -n -e 's/^[[:space:]]*\"server\":[[:space:]]*\"(.*)\".*/\1/p' "${PRIVATE_ETC}/config_redir.json")"
+SERVER_DOMAIN="$(/opt/bin/sed -r -n -e 's/^[[:space:]]*\"server\":[[:space:]]*\"(.*)\".*/\1/p' "${PRIVATE_ETC}/config_redir.json")"
 #
 # SERVER_IP: Domain of the SS-SERVER
 # 设置自定义变量SERVER_IP为SS-SERVER的IP地址
-SERVER_IP="$(nslookup "${SERVER_DOMAIN}" | /opt/bin/sed -E -n -e '/Name/,+1s/.*:[[:space:]]+(([[:digit:]]+\.?){4})[[:space:]]+.*/\1/p')"
+SERVER_IP="$(nslookup "${SERVER_DOMAIN}" | /opt/bin/sed -r -n -e '/Name/,+1s/.*:[[:space:]]+(([[:digit:]]+\.?){4})[[:space:]]+.*/\1/p')"
 #
 # BUILT_IN_CHAIN_NAME: Name of the built-in chain
 # 设置自定义变量BUILT_IN_CHAIN_NAME为防火墙默认链名
-BUILT_IN_CHAIN_NAME="$(/opt/bin/sed -E -n -e 's/^BUILT_IN_CHAIN_NAME=\"(.*)\"/\1/p' "${PRIVATE_BIN}/fw_ss_transparent_proxy_enable.service")"
+BUILT_IN_CHAIN_NAME="$(/opt/bin/sed -r -n -e 's/^BUILT_IN_CHAIN_NAME=\"(.*)\"/\1/p' "${PRIVATE_BIN}/fw_ss_transparent_proxy_enable.service")"
 #
 # USER_DEFINED_CHAIN_NAME: Name of the user-defined chain
 # 设置自定义变量USER_DEFINED_CHAIN_NAME为防火墙自定义链名
-USER_DEFINED_CHAIN_NAME="$(/opt/bin/sed -E -n -e 's/^USER_DEFINED_CHAIN_NAME=\"(.*)\"/\1/p' "${PRIVATE_BIN}/fw_ss_transparent_proxy_enable.service")"
+USER_DEFINED_CHAIN_NAME="$(/opt/bin/sed -r -n -e 's/^USER_DEFINED_CHAIN_NAME=\"(.*)\"/\1/p' "${PRIVATE_BIN}/fw_ss_transparent_proxy_enable.service")"
 #
 # ADMINUSER: The administrator of the router
 # 设置环境变量ADMINUSER为路由器管理页面的登陆帐号

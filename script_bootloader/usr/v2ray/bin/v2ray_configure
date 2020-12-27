@@ -60,7 +60,7 @@ case ${#} in
             /opt/bin/echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: \033[4mTRANSPORT SETTINGS\033[0m: tcp | https"
             doubleCheckAndConfirm TRANSPORT
             #
-            case "$(/opt/bin/echo "${TRANSPORT}" | /opt/bin/sed -E 's/[[:upper:]]/\l&/g')" in
+            case "$(/opt/bin/echo "${TRANSPORT}" | /opt/bin/sed -r 's/[[:upper:]]/\l&/g')" in
                 "tcp")
                     /opt/bin/echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: \033[4mUPSTREAM DNS IP\033[0m: IP address of upstream DNS server"
                     doubleCheckAndConfirm UPSTREAM_DNS_IP
@@ -118,7 +118,7 @@ esac
 #
 ########## CONFIGURE V2RAY ##########
 #
-case "$(/opt/bin/echo "${TRANSPORT}" | /opt/bin/sed -E 's/[[:upper:]]/\l&/g')" in
+case "$(/opt/bin/echo "${TRANSPORT}" | /opt/bin/sed -r 's/[[:upper:]]/\l&/g')" in
     "tcp")
         # Create ${PRIVATE_ETC}/config_proxy.json
         # 创建${PRIVATE_ETC}/config_proxy.json
@@ -126,12 +126,12 @@ case "$(/opt/bin/echo "${TRANSPORT}" | /opt/bin/sed -E 's/[[:upper:]]/\l&/g')" i
         #
         # Modify ${PRIVATE_ETC}/config_proxy.json
         # 修改${PRIVATE_ETC}/config_proxy.json
-        /opt/bin/sed -E -i 's#<UPSTREAM_DNS_IP>#'"${UPSTREAM_DNS_IP}"'#' "${PRIVATE_ETC}/config_proxy.json"
-        /opt/bin/sed -E -i 's#<WAN_INBOUND_VMESS_ID>#'"${WAN_INBOUND_VMESS_ID}"'#' "${PRIVATE_ETC}/config_proxy.json"
-        /opt/bin/sed -E -i 's#<WAN_INBOUND_SS_PASSWORD>#'"${WAN_INBOUND_SS_PASSWORD}"'#' "${PRIVATE_ETC}/config_proxy.json"
-        /opt/bin/sed -E -i 's#<IP_OR_DOMAIN_OF_V2RAY_SERVER>#'"${IP_OR_DOMAIN_OF_V2RAY_SERVER}"'#' "${PRIVATE_ETC}/config_proxy.json"
-        /opt/bin/sed -E -i 's#<PORT_OF_V2RAY_SERVER>#'"${PORT_OF_V2RAY_SERVER}"'#' "${PRIVATE_ETC}/config_proxy.json"
-        /opt/bin/sed -E -i 's#<OUTBOUND_VMESS_ID>#'"${OUTBOUND_VMESS_ID}"'#' "${PRIVATE_ETC}/config_proxy.json"
+        /opt/bin/sed -r -i 's#<UPSTREAM_DNS_IP>#'"${UPSTREAM_DNS_IP}"'#' "${PRIVATE_ETC}/config_proxy.json"
+        /opt/bin/sed -r -i 's#<WAN_INBOUND_VMESS_ID>#'"${WAN_INBOUND_VMESS_ID}"'#' "${PRIVATE_ETC}/config_proxy.json"
+        /opt/bin/sed -r -i 's#<WAN_INBOUND_SS_PASSWORD>#'"${WAN_INBOUND_SS_PASSWORD}"'#' "${PRIVATE_ETC}/config_proxy.json"
+        /opt/bin/sed -r -i 's#<IP_OR_DOMAIN_OF_V2RAY_SERVER>#'"${IP_OR_DOMAIN_OF_V2RAY_SERVER}"'#' "${PRIVATE_ETC}/config_proxy.json"
+        /opt/bin/sed -r -i 's#<PORT_OF_V2RAY_SERVER>#'"${PORT_OF_V2RAY_SERVER}"'#' "${PRIVATE_ETC}/config_proxy.json"
+        /opt/bin/sed -r -i 's#<OUTBOUND_VMESS_ID>#'"${OUTBOUND_VMESS_ID}"'#' "${PRIVATE_ETC}/config_proxy.json"
         ;;
     "https")
         # Create ${PRIVATE_ETC}/config_proxy.json
@@ -140,11 +140,11 @@ case "$(/opt/bin/echo "${TRANSPORT}" | /opt/bin/sed -E 's/[[:upper:]]/\l&/g')" i
         #
         # Modify ${PRIVATE_ETC}/config_proxy.json
         # 修改${PRIVATE_ETC}/config_proxy.json
-        /opt/bin/sed -E -i 's#<UPSTREAM_DNS_IP>#'"${UPSTREAM_DNS_IP}"'#' "${PRIVATE_ETC}/config_proxy.json"
-        /opt/bin/sed -E -i 's#<WAN_INBOUND_VMESS_ID>#'"${WAN_INBOUND_VMESS_ID}"'#' "${PRIVATE_ETC}/config_proxy.json"
-        /opt/bin/sed -E -i 's#<WAN_INBOUND_SS_PASSWORD>#'"${WAN_INBOUND_SS_PASSWORD}"'#' "${PRIVATE_ETC}/config_proxy.json"
-        /opt/bin/sed -E -i 's#<DOMAIN_OF_V2RAY_SERVER>#'"${DOMAIN_OF_V2RAY_SERVER}"'#' "${PRIVATE_ETC}/config_proxy.json"
-        /opt/bin/sed -E -i 's#<OUTBOUND_VMESS_ID>#'"${OUTBOUND_VMESS_ID}"'#' "${PRIVATE_ETC}/config_proxy.json"
+        /opt/bin/sed -r -i 's#<UPSTREAM_DNS_IP>#'"${UPSTREAM_DNS_IP}"'#' "${PRIVATE_ETC}/config_proxy.json"
+        /opt/bin/sed -r -i 's#<WAN_INBOUND_VMESS_ID>#'"${WAN_INBOUND_VMESS_ID}"'#' "${PRIVATE_ETC}/config_proxy.json"
+        /opt/bin/sed -r -i 's#<WAN_INBOUND_SS_PASSWORD>#'"${WAN_INBOUND_SS_PASSWORD}"'#' "${PRIVATE_ETC}/config_proxy.json"
+        /opt/bin/sed -r -i 's#<DOMAIN_OF_V2RAY_SERVER>#'"${DOMAIN_OF_V2RAY_SERVER}"'#' "${PRIVATE_ETC}/config_proxy.json"
+        /opt/bin/sed -r -i 's#<OUTBOUND_VMESS_ID>#'"${OUTBOUND_VMESS_ID}"'#' "${PRIVATE_ETC}/config_proxy.json"
         ;;
 esac
 #

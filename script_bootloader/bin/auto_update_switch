@@ -65,7 +65,7 @@ case ${#} in
             /opt/bin/echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: \033[4mAUTO UPDATE\033[0m: enable | disable"
             doubleCheckAndConfirm AUTO_UPDATE
             #
-            case "$(/opt/bin/echo "${AUTO_UPDATE}" | /opt/bin/sed -E 's/[[:upper:]]/\l&/g')" in
+            case "$(/opt/bin/echo "${AUTO_UPDATE}" | /opt/bin/sed -r 's/[[:upper:]]/\l&/g')" in
                 "enable")
                     break
                     ;;
@@ -95,13 +95,13 @@ esac
 #
 # Modify script_bootloader_usb_mount
 # 修改script_bootloader_usb_mount
-case "$(/opt/bin/echo "${AUTO_UPDATE}" | /opt/bin/sed -E 's/[[:upper:]]/\l&/g')" in
+case "$(/opt/bin/echo "${AUTO_UPDATE}" | /opt/bin/sed -r 's/[[:upper:]]/\l&/g')" in
     "enable")
         # Auto update at 3:00 on 2nd day every month
         # 每月2日3:00自动更新
         /opt/bin/echo "0 3 2 * * \"${SBL_SYS_BIN}/update\"" >> "/var/spool/cron/crontabs/${ADMINUSER}"
         #
-        /opt/bin/sed -E -i 's#^(AUTO_UPDATE=).*#\1\"enable\"#' "${SBL_SYS_BIN}/script_bootloader_usb_mount"
+        /opt/bin/sed -r -i 's#^(AUTO_UPDATE=).*#\1\"enable\"#' "${SBL_SYS_BIN}/script_bootloader_usb_mount"
         #
         /opt/bin/chmod 600 "/var/spool/cron/crontabs/${ADMINUSER}"
         #
@@ -110,7 +110,7 @@ case "$(/opt/bin/echo "${AUTO_UPDATE}" | /opt/bin/sed -E 's/[[:upper:]]/\l&/g')"
     "disable")
         /opt/bin/sed -i '\#\"'"${SBL_SYS_BIN}"'/update\"#d' "/var/spool/cron/crontabs/${ADMINUSER}"
         #
-        /opt/bin/sed -E -i 's#^(AUTO_UPDATE=).*#\1\"disable\"#' "${SBL_SYS_BIN}/script_bootloader_usb_mount"
+        /opt/bin/sed -r -i 's#^(AUTO_UPDATE=).*#\1\"disable\"#' "${SBL_SYS_BIN}/script_bootloader_usb_mount"
         #
         #/opt/bin/rm -f "/var/run/sbl_auto_update_enabled"
         ;;

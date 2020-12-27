@@ -39,11 +39,11 @@ PRIVATE_ETC="${PRIVATE_ROOT}/etc"
 #
 # SERVER_DOMAIN: Domain of the V2RAY-SERVER
 # 设置自定义变量SERVER_DOMAIN为V2RAY-SERVER的域名
-SERVER_DOMAIN="$(/opt/bin/sed -E -n -e '/outbounds/,/port/s/^[[:space:]]*\"address\":[[:space:]]*\"(.*)\".*/\1/p' "${PRIVATE_ETC}/config_proxy.json")"
+SERVER_DOMAIN="$(/opt/bin/sed -r -n -e '/outbounds/,/port/s/^[[:space:]]*\"address\":[[:space:]]*\"(.*)\".*/\1/p' "${PRIVATE_ETC}/config_proxy.json")"
 #
 # SERVER_IP: Domain of the V2RAY-SERVER
 # 设置自定义变量SERVER_IP为V2RAY-SERVER的IP地址
-SERVER_IP="$(nslookup "${SERVER_DOMAIN}" | /opt/bin/sed -E -n -e '/Name/,+1s/.*:[[:space:]]+(([[:digit:]]+\.?){4})[[:space:]]+.*/\1/p')"
+SERVER_IP="$(nslookup "${SERVER_DOMAIN}" | /opt/bin/sed -r -n -e '/Name/,+1s/.*:[[:space:]]+(([[:digit:]]+\.?){4})[[:space:]]+.*/\1/p')"
 #
 # LOCAL_PORT: Port of the V2RAY-DOKODEMO-DOOR
 # 设置自定义变量LOCAL_PORT为V2RAY-DOKODEMO-DOOR的接收端口

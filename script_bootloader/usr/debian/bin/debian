@@ -72,7 +72,7 @@ stop()
     #
     /bin/umount "${CHROOT_DIR}/dev/pts" 2> /dev/null
     #
-    for ITEM in $(/bin/mount | /opt/bin/grep ''"${CHROOT_DIR}"'' | /opt/bin/sed -E -n -e 's#[^[:space:]]+[[:space:]]+on[[:space:]]+([^[:space:]]+)[[:space:]]+.*$#\1#p')
+    for ITEM in $(/bin/mount | /opt/bin/grep ''"${CHROOT_DIR}"'' | /opt/bin/sed -r -n -e 's#[^[:space:]]+[[:space:]]+on[[:space:]]+([^[:space:]]+)[[:space:]]+.*$#\1#p')
     do
         /bin/umount -l "${ITEM}"
     done
@@ -113,7 +113,7 @@ restart()
         #
         /bin/umount "${CHROOT_DIR}/dev/pts" 2> /dev/null
         #
-        for ITEM in $(/bin/mount | /opt/bin/grep ''"${CHROOT_DIR}"'' | /opt/bin/sed -E -n -e 's#[^[:space:]]+[[:space:]]+on[[:space:]]+([^[:space:]]+)[[:space:]]+.*$#\1#p')
+        for ITEM in $(/bin/mount | /opt/bin/grep ''"${CHROOT_DIR}"'' | /opt/bin/sed -r -n -e 's#[^[:space:]]+[[:space:]]+on[[:space:]]+([^[:space:]]+)[[:space:]]+.*$#\1#p')
         do
             /bin/umount -l "${ITEM}"
         done

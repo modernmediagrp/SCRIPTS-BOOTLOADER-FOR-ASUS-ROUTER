@@ -47,15 +47,15 @@ PRIVATE_USR="${PRIVATE_ROOT}/usr"
 #
 # LATEST_VERSION: Version of the latest webdav
 # 设置自定义变量LATEST_VERSION为最新版webdav的版本号
-LATEST_VERSION="$(/opt/bin/curl -s "https://api.github.com/repos/hacdias/webdav/releases/latest" | /opt/bin/sed -E -n -e 's/^[[:space:]]*\"tag_name\":[[:space:]]*\"(.*)\".*/\1/p')"
+LATEST_VERSION="$(/opt/bin/curl -s "https://api.github.com/repos/hacdias/webdav/releases/latest" | /opt/bin/sed -r -n -e 's/^[[:space:]]*\"tag_name\":[[:space:]]*\"(.*)\".*/\1/p')"
 #
 # CURRENT_VERSION: Version of the current webdav
 # 设置自定义变量CURRENT_VERSION为当前webdav的版本号
-CURRENT_VERSION="$("${PRIVATE_USR}/webdav" version | /opt/bin/sed -E -e 's/.*(v[[:digit:].]*).*/\1/')"
+CURRENT_VERSION="$("${PRIVATE_USR}/webdav" version | /opt/bin/sed -r -e 's/.*(v[[:digit:].]*).*/\1/')"
 #
 # OPERATING_SYSTEM: Operating system of the ASUS Router
 # 设置自定义变量OPERATING_SYSTEM为华硕路由器系统
-OPERATING_SYSTEM="$(/opt/bin/uname | /opt/bin/sed -E 's/[[:upper:]]/\l&/g')"
+OPERATING_SYSTEM="$(/opt/bin/uname | /opt/bin/sed -r 's/[[:upper:]]/\l&/g')"
 #
 # ROUTER_ARCHITECTURE: Architecture of the ASUS Router
 # 设置自定义变量ROUTER_ARCHITECTURE为华硕路由器架构

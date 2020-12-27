@@ -2,7 +2,7 @@
 #
 # Code to generate file sys_update_fingerprint_current in Windows 10
 # 以下代码用于在Windows 10中生成文件sys_update_fingerprint_current
-# rm -f ./script_bootloader/var/update/sys_update_fingerprint_current && find ./script_bootloader/ -type f -exec sha256sum {} > ./sys_update_fingerprint_current \; && sed -E -i 's/[[:space:]]+\*\./ ./' ./sys_update_fingerprint_current && mv -f ./sys_update_fingerprint_current ./script_bootloader/var/update/sys_update_fingerprint_current
+# rm -f ./script_bootloader/var/update/sys_update_fingerprint_current && find ./script_bootloader/ -type f -exec sha256sum {} > ./sys_update_fingerprint_current \; && sed -r -i 's/[[:space:]]+\*\./ ./' ./sys_update_fingerprint_current && mv -f ./sys_update_fingerprint_current ./script_bootloader/var/update/sys_update_fingerprint_current
 #
 # 此程序用于更新“华硕路由器开机自动运行程序系统”
 #
@@ -126,8 +126,8 @@ updateFile()
     local FILE_DOWNLOADED="${SBL_SYS_UPDATE}/$(/opt/bin/basename "${1}")"
     /opt/bin/wget-ssl -q -c -t 10 -T 120 --no-cookies --no-check-certificate -O "${FILE_DOWNLOADED}" "${DOWNLOAD_LINK_PREFIX}/${1}"
     #
-    local FILE_DOWNLOADED_SHA256="$(/opt/bin/sha256sum "${FILE_DOWNLOADED}" | /opt/bin/sed -E -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')"
-    local TARGET_SHA256="$(/opt/bin/grep ''"${1}"'$' "${LATEST_FINGERPRINT}" | /opt/bin/sed -E -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')"
+    local FILE_DOWNLOADED_SHA256="$(/opt/bin/sha256sum "${FILE_DOWNLOADED}" | /opt/bin/sed -r -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')"
+    local TARGET_SHA256="$(/opt/bin/grep ''"${1}"'$' "${LATEST_FINGERPRINT}" | /opt/bin/sed -r -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')"
     if [ "${FILE_DOWNLOADED_SHA256}" != "${TARGET_SHA256}" ]
     then
         /opt/bin/echo -e "\033[1;41;37mFAILURE\033[0m: CONNECTION FAILED" | /opt/bin/tee -a "${SBL_UPDATE_LOG}"
@@ -220,7 +220,7 @@ fi
 #
 # Compare SHA256 of ${LATEST_FINGERPRINT} and SHA256 of ${CURRENT_FINGERPRINT}
 # 比较${LATEST_FINGERPRINT}和${CURRENT_FINGERPRINT}的SHA256
-if [ "$(/opt/bin/sha256sum "${LATEST_FINGERPRINT}" | /opt/bin/sed -E -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" == "$(/opt/bin/sha256sum "${CURRENT_FINGERPRINT}" | /opt/bin/sed -E -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" ]
+if [ "$(/opt/bin/sha256sum "${LATEST_FINGERPRINT}" | /opt/bin/sed -r -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" == "$(/opt/bin/sha256sum "${CURRENT_FINGERPRINT}" | /opt/bin/sed -r -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" ]
 then
     /opt/bin/echo -e "\033[1;44;37mNO-CHANGES\033[0m" | /opt/bin/tee -a "${SBL_UPDATE_LOG}"
     #
@@ -228,13 +228,13 @@ else
     # Generate list of files to add or modify
     # 生成文件新增或修改列表
     /opt/bin/grep -Fxvf "${CURRENT_FINGERPRINT}" "${LATEST_FINGERPRINT}" > "${SBL_SYS_UPDATE}/files_to_add_or_modify.tmp"
-    /opt/bin/sed -E -i 's#^[[:alnum:]]+[[:space:]]+\./script_bootloader/##' "${SBL_SYS_UPDATE}/files_to_add_or_modify.tmp"
+    /opt/bin/sed -r -i 's#^[[:alnum:]]+[[:space:]]+\./script_bootloader/##' "${SBL_SYS_UPDATE}/files_to_add_or_modify.tmp"
     /opt/bin/cp -f "${SBL_SYS_UPDATE}/files_to_add_or_modify.tmp" "${SBL_SYS_UPDATE}/files_to_add_or_modify.stack"
     #
     # Generate list of files to remove
     # 生成文件删除列表
-    /opt/bin/sed -E -e 's#^[[:alnum:]]+[[:space:]]+\./script_bootloader#'"${SBL_SYS_ROOT}"'#' "${LATEST_FINGERPRINT}" > "${SBL_SYS_UPDATE}/files_to_remove_part_latest.tmp"
-    /opt/bin/sed -E -e 's#^[[:alnum:]]+[[:space:]]+\./script_bootloader#'"${SBL_SYS_ROOT}"'#' "${CURRENT_FINGERPRINT}" > "${SBL_SYS_UPDATE}/files_to_remove_part_current.tmp"
+    /opt/bin/sed -r -e 's#^[[:alnum:]]+[[:space:]]+\./script_bootloader#'"${SBL_SYS_ROOT}"'#' "${LATEST_FINGERPRINT}" > "${SBL_SYS_UPDATE}/files_to_remove_part_latest.tmp"
+    /opt/bin/sed -r -e 's#^[[:alnum:]]+[[:space:]]+\./script_bootloader#'"${SBL_SYS_ROOT}"'#' "${CURRENT_FINGERPRINT}" > "${SBL_SYS_UPDATE}/files_to_remove_part_current.tmp"
     /opt/bin/grep -Fxvf "${SBL_SYS_UPDATE}/files_to_remove_part_latest.tmp" "${SBL_SYS_UPDATE}/files_to_remove_part_current.tmp" > "${SBL_SYS_UPDATE}/files_to_remove.tmp"
     /opt/bin/cp -f "${SBL_SYS_UPDATE}/files_to_remove.tmp" "${SBL_SYS_UPDATE}/files_to_remove.stack"
     #
@@ -274,7 +274,7 @@ else
     #
     # Tell users to run update again, when it is updated
     # 当文件update被更新，通知用户再次运行update
-    if [ "$(/opt/bin/grep 'script_bootloader\/bin\/update$' "${LATEST_FINGERPRINT}" | /opt/bin/sed -E -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" != "$(/opt/bin/grep 'script_bootloader\/bin\/update$' "${CURRENT_FINGERPRINT}" | /opt/bin/sed -E -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" ]
+    if [ "$(/opt/bin/grep 'script_bootloader\/bin\/update$' "${LATEST_FINGERPRINT}" | /opt/bin/sed -r -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" != "$(/opt/bin/grep 'script_bootloader\/bin\/update$' "${CURRENT_FINGERPRINT}" | /opt/bin/sed -r -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" ]
     then
         /opt/bin/echo -e "\n\033[1;43;31mNOTICE\033[0m: ${SBL_SYS_BIN}/update IS UPDATED, PLEASE EXECUTE IT AGAIN"
     fi
@@ -287,7 +287,7 @@ else
     #
     # Run update_patch when it is updated
     # 当文件update_patch被更新，运行update_patch
-    if [ "$(/opt/bin/grep 'script_bootloader\/var\/update\/update_patch$' "${CURRENT_FINGERPRINT}" | /opt/bin/sed -E -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" != "$(/opt/bin/grep 'script_bootloader\/var\/update\/update_patch$' "${CURRENT_FINGERPRINT}_prev" | /opt/bin/sed -E -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" ]
+    if [ "$(/opt/bin/grep 'script_bootloader\/var\/update\/update_patch$' "${CURRENT_FINGERPRINT}" | /opt/bin/sed -r -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" != "$(/opt/bin/grep 'script_bootloader\/var\/update\/update_patch$' "${CURRENT_FINGERPRINT}_prev" | /opt/bin/sed -r -n -e 's#^([[:alnum:]]+)[[:space:]]+.*#\1#p')" ]
     then
         /opt/bin/echo -e "\n\033[1;43;31mNOTICE\033[0m: PATCH SCRIPTS-BOOTLOADER-FOR-ASUS-ROUTER"
         "${SBL_SYS_VAR}/update/update_patch"
@@ -317,7 +317,7 @@ fi
 #
 # Generate list of addons installed
 # 生成已安装插件列表
-/opt/bin/sed -E -n -e 's/.*SUCCESS.*:[[:space:]]+(.*)$/\1/p' "${SBL_SYS_VAR}/addons/addons_install_log" > "${SBL_SYS_UPDATE}/addons_installed.tmp" 2> /dev/null
+/opt/bin/sed -r -n -e 's/.*SUCCESS.*:[[:space:]]+(.*)$/\1/p' "${SBL_SYS_VAR}/addons/addons_install_log" > "${SBL_SYS_UPDATE}/addons_installed.tmp" 2> /dev/null
 #
 # Check if ${SBL_SYS_ETC}/exclusion_list_of_addons_update exists
 # 检查文件${SBL_SYS_ETC}/exclusion_list_of_addons_update是否存在

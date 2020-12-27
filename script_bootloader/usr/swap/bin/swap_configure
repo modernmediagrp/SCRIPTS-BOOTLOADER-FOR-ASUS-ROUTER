@@ -88,7 +88,7 @@ COUNT=$((${SWAP_SIZE}*1024))
 #
 ########## CONFIGURE SWAP ##########
 #
-TEST_SWAP=$(free | sed -E -n -e 's/^Swap:[[:space:]]+([[:digit:]]+).*/\1/p')
+TEST_SWAP=$(free | sed -r -n -e 's/^Swap:[[:space:]]+([[:digit:]]+).*/\1/p')
 #
 if [ ${TEST_SWAP} -ne 0 ]
 then

@@ -89,7 +89,7 @@ esac
 #
 # DEBIAN_VERSION: Version of Debian
 # 设置自定义变量DEBIAN_VERSION为Debian版本
-case "$(/opt/bin/uname -r | /opt/bin/sed -E -n -e 's/^([[:digit:]]).*/\1/p')" in
+case "$(/opt/bin/uname -r | /opt/bin/sed -r -n -e 's/^([[:digit:]]).*/\1/p')" in
     "2")
         DEBIAN_VERSION="jessie"
         ;;

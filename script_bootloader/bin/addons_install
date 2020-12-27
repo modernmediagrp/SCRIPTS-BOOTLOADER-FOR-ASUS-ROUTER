@@ -119,13 +119,13 @@ then
             /opt/bin/sleep 5
         done
         #
-        MONIT_ID_FILE="$(/opt/bin/sed -E -n -e 's/^set[[:space:]]+idfile[[:space:]]+([^[:space:]]+)/\1/p' "/opt/etc/monitrc")"
+        MONIT_ID_FILE="$(/opt/bin/sed -r -n -e 's/^set[[:space:]]+idfile[[:space:]]+([^[:space:]]+)/\1/p' "/opt/etc/monitrc")"
         if [ "${MONIT_ID_FILE}" == "/var/.monit.id" ]
         then
             /opt/bin/rm -f "${MONIT_ID_FILE}"
         fi
         #
-        MONIT_STATE_FILE="$(/opt/bin/sed -E -n -e 's/^set[[:space:]]+statefile[[:space:]]+([^[:space:]]+)/\1/p' "/opt/etc/monitrc")"
+        MONIT_STATE_FILE="$(/opt/bin/sed -r -n -e 's/^set[[:space:]]+statefile[[:space:]]+([^[:space:]]+)/\1/p' "/opt/etc/monitrc")"
         if [ "${MONIT_STATE_FILE}" == "/var/.monit.state" ]
         then
             /opt/bin/rm -f "${MONIT_STATE_FILE}"
@@ -134,7 +134,7 @@ then
     #
     # Configure MONIT MANAGEMENT SYSTEM
     # 配置MONIT MANAGEMENT SYSTEM
-    /opt/bin/sed -E -i 's/allow[[:space:]]+[[:alnum:]_]+:[[:alnum:]_]+/allow '"\'${ADMINUSER}\'\:\'${ADMINPASSWORD}\'"'/' "/opt/etc/monitrc"
+    /opt/bin/sed -r -i 's/allow[[:space:]]+[[:alnum:]_]+:[[:alnum:]_]+/allow '"\'${ADMINUSER}\'\:\'${ADMINPASSWORD}\'"'/' "/opt/etc/monitrc"
     #
     # Start MONIT MANAGEMENT SYSTEM及其全部服务
     # 启动MONIT MANAGEMENT SYSTEM及其全部服务
@@ -183,9 +183,9 @@ do
     #
     while [ ${ADDON_ORDER} -le ${ADDON_COUNT} ]
     do
-        ADDON_ITEM="$(/opt/bin/sed -E -n -e 's/.*\/([[:alnum:]_-]+)_install/\1/' -e ''"${ADDON_ORDER}"'p' "${SBL_SYS_VAR}/addons/addons_install_list")"
+        ADDON_ITEM="$(/opt/bin/sed -r -n -e 's/.*\/([[:alnum:]_-]+)_install/\1/' -e ''"${ADDON_ORDER}"'p' "${SBL_SYS_VAR}/addons/addons_install_list")"
         #
-        case "$(/opt/bin/grep -E ':[[:space:]]+'"${ADDON_ITEM}"'$' "${SBL_SYS_VAR}/addons/addons_install_log" 2> /dev/null | /opt/bin/sed -E -e 's/^[^[:alpha:]]+m([[:upper:]]+).*/\1/')" in
+        case "$(/opt/bin/grep -E ':[[:space:]]+'"${ADDON_ITEM}"'$' "${SBL_SYS_VAR}/addons/addons_install_log" 2> /dev/null | /opt/bin/sed -r -e 's/^[^[:alpha:]]+m([[:upper:]]+).*/\1/')" in
             "SUCCESS")
                 ADDON_STATUS="[INSTALLED    ]"
                 ;;
@@ -219,7 +219,7 @@ do
             break
         fi
         #
-        ADDON_TO_INSTALL="$(/opt/bin/sed -E -n -e 's/.*\/([[:alnum:]_-]+)_install/\1/' -e ''"${INPUT_VALUE}"'p' "${SBL_SYS_VAR}/addons/addons_install_list")"
+        ADDON_TO_INSTALL="$(/opt/bin/sed -r -n -e 's/.*\/([[:alnum:]_-]+)_install/\1/' -e ''"${INPUT_VALUE}"'p' "${SBL_SYS_VAR}/addons/addons_install_list")"
         #
         # Check if ${ADDON_TO_INSTALL} has been installed successfully
         # 检查文件${ADDON_TO_INSTALL}是否已成功安装
@@ -229,7 +229,7 @@ do
         then
             # Install the addon chosen by user
             # 安装用户选择的插件
-            "$(/opt/bin/sed -E -n -e ''"${INPUT_VALUE}"'p' "${SBL_SYS_VAR}/addons/addons_install_list")"
+            "$(/opt/bin/sed -r -n -e ''"${INPUT_VALUE}"'p' "${SBL_SYS_VAR}/addons/addons_install_list")"
             #
             # Check if return value is 0
             # 检查返回值是否为0

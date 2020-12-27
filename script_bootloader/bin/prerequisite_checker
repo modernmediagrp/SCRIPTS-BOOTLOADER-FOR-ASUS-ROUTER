@@ -128,7 +128,7 @@ sentinelChecker ${FILE_SENTINEL} "($(basename $0)): $$ \033[1;43;31mNOTICE\033[0
 #
 ########## CHECK FEATURES OF COMMANDS ##########
 #
-if [ "$(echo "1st2nd3rd" | sed -E -n -e 's/([[:digit:]])[[:alpha:]]+([[:digit:]])[[:alpha:]]{2}([[:digit:]])[[:lower:]]+/\1\2\3/p')" != "123" ]
+if [ "$(echo "1st2nd3rd" | sed -r -n -e 's/([[:digit:]])[[:alpha:]]+([[:digit:]])[[:alpha:]]{2}([[:digit:]])[[:lower:]]+/\1\2\3/p')" != "123" ]
 then
     echo -e "extended regular expression: \033[1;41;37mNOT WORKING\033[0m"
     FEATURE_SENTINEL=$((${FEATURE_SENTINEL}+1))

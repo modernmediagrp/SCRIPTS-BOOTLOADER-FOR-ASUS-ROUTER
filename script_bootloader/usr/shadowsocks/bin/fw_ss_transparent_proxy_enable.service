@@ -31,15 +31,15 @@ PRIVATE_ETC="${PRIVATE_ROOT}/etc"
 #
 # SERVER_DOMAIN: Domain of the SS-SERVER
 # 设置自定义变量SERVER_DOMAIN为SS-SERVER的域名
-SERVER_DOMAIN="$(/opt/bin/sed -E -n -e 's/^[[:space:]]*\"server\":[[:space:]]*\"(.*)\".*/\1/p' "${PRIVATE_ETC}/config_redir.json")"
+SERVER_DOMAIN="$(/opt/bin/sed -r -n -e 's/^[[:space:]]*\"server\":[[:space:]]*\"(.*)\".*/\1/p' "${PRIVATE_ETC}/config_redir.json")"
 #
 # SERVER_IP: Domain of the SS-SERVER
 # 设置自定义变量SERVER_IP为SS-SERVER的IP地址
-SERVER_IP="$(nslookup "${SERVER_DOMAIN}" | /opt/bin/sed -E -n -e '/Name/,+1s/.*:[[:space:]]+(([[:digit:]]+\.?){4})[[:space:]]+.*/\1/p')"
+SERVER_IP="$(nslookup "${SERVER_DOMAIN}" | /opt/bin/sed -r -n -e '/Name/,+1s/.*:[[:space:]]+(([[:digit:]]+\.?){4})[[:space:]]+.*/\1/p')"
 #
 # LOCAL_PORT: Local port of the SS-REDIR
 # 设置自定义变量LOCAL_PORT为SS-REDIR的接收端口
-LOCAL_PORT="$(/opt/bin/sed -E -n -e 's/^[[:space:]]*\"local_port\":[[:space:]]*\"(.*)\".*/\1/p' "${PRIVATE_ETC}/config_redir.json")"
+LOCAL_PORT="$(/opt/bin/sed -r -n -e 's/^[[:space:]]*\"local_port\":[[:space:]]*\"(.*)\".*/\1/p' "${PRIVATE_ETC}/config_redir.json")"
 #
 # BUILT_IN_CHAIN_NAME: Name of the built-in chain
 # 设置自定义变量BUILT_IN_CHAIN_NAME为防火墙默认链名

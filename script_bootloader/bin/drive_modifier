@@ -10,7 +10,7 @@
 #
 # USB_DRIVE: USB flash drive
 # 设置自定义变量USB_DRIVE为U盘
-USB_DRIVE="$(nvram show 2> /dev/null | sed -E -n -e 's/^usb_path[[:digit:]]_act=([[:alnum:]]+).*/\1/p' | head -n 1)"
+USB_DRIVE="$(nvram show 2> /dev/null | sed -r -n -e 's/^usb_path[[:digit:]]_act=([[:alnum:]]+).*/\1/p' | head -n 1)"
 #
 if [ -z "${USB_DRIVE}" ]
 then
@@ -40,11 +40,11 @@ USB_DRIVE_LABEL="ASUS_ROUTER"
 #
 # USB_DRIVE_BRAND_MODEL: Brand and model of the USB flash drive
 # 设置自定义变量USB_DRIVE_BRAND_MODEL为U盘品牌和型号
-USB_DRIVE_BRAND_MODEL="$(sed -E 's/[[:space:]]+/ /g' "/proc/scsi/sg/device_strs")"
+USB_DRIVE_BRAND_MODEL="$(sed -r 's/[[:space:]]+/ /g' "/proc/scsi/sg/device_strs")"
 #
 # KERNEL_VERSION: Version of kernel
 # 设置自定义变量KERNEL_VERSION为内核版本号
-KERNEL_VERSION="$(uname -r | sed -E -n -e 's/[^[:digit:]]*([[:digit:].]+)[^[:digit:]]*/\1/p')"
+KERNEL_VERSION="$(uname -r | sed -r -n -e 's/[^[:digit:]]*([[:digit:].]+)[^[:digit:]]*/\1/p')"
 #
 ########## END ##########
 #
@@ -55,11 +55,11 @@ checkSupportForExt4()
 {
     # KERNEL_VERSION: Version of kernel
     # 设置自定义变量KERNEL_VERSION为内核版本号
-    local KERNEL_VERSION="$(uname -r | sed -E -n -e 's/^[^[:digit:].]*([[:digit:].]+).*/\1/p')"
+    local KERNEL_VERSION="$(uname -r | sed -r -n -e 's/^[^[:digit:].]*([[:digit:].]+).*/\1/p')"
     #
-    local KERNEL_VERSION_PART1="$(echo "${KERNEL_VERSION}" | sed -E -n -e 's/([[:digit:]]+)\.[[:digit:]]+\.[[:digit:]]+.*/\1/p')"
-    local KERNEL_VERSION_PART2="$(echo "${KERNEL_VERSION}" | sed -E -n -e 's/[[:digit:]]+\.([[:digit:]]+)\.[[:digit:]]+.*/\1/p')"
-    local KERNEL_VERSION_PART3="$(echo "${KERNEL_VERSION}" | sed -E -n -e 's/[[:digit:]]+\.[[:digit:]]+\.([[:digit:]]+).*/\1/p')"
+    local KERNEL_VERSION_PART1="$(echo "${KERNEL_VERSION}" | sed -r -n -e 's/([[:digit:]]+)\.[[:digit:]]+\.[[:digit:]]+.*/\1/p')"
+    local KERNEL_VERSION_PART2="$(echo "${KERNEL_VERSION}" | sed -r -n -e 's/[[:digit:]]+\.([[:digit:]]+)\.[[:digit:]]+.*/\1/p')"
+    local KERNEL_VERSION_PART3="$(echo "${KERNEL_VERSION}" | sed -r -n -e 's/[[:digit:]]+\.[[:digit:]]+\.([[:digit:]]+).*/\1/p')"
     local PROC_FILESYSTEM="$(grep 'ext4' "/proc/filesystems")"
     #
     # EXT4 filesystem is only supported on the devices with kernel newer than 2.6.28
@@ -98,7 +98,7 @@ cd "/tmp"
 #
 # Unmount all partitions on the USB flash drive
 # 卸载U盘上的全部分区
-MAX_PARTNUM=$(echo -ne "p\n" | fdisk "/dev/${USB_DRIVE}" | sed -E -n -e 's/[[:space:]]*\/dev\/'"${USB_DRIVE}"'([[:digit:]]+)[[:space:]]+.*/\1/p' | tail -n 1)
+MAX_PARTNUM=$(echo -ne "p\n" | fdisk "/dev/${USB_DRIVE}" | sed -r -n -e 's/[[:space:]]*\/dev\/'"${USB_DRIVE}"'([[:digit:]]+)[[:space:]]+.*/\1/p' | tail -n 1)
 #
 while [ -n "${MAX_PARTNUM}" ] && [ ${MAX_PARTNUM} -gt 0 ]
 do

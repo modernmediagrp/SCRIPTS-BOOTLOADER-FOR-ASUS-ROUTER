@@ -60,7 +60,7 @@ case ${#} in
             /opt/bin/echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: \033[4mROLE\033[0m: client | server"
             doubleCheckAndConfirm ROLE
             #
-            case "$(/opt/bin/echo "${ROLE}" | /opt/bin/sed -E 's/[[:upper:]]/\l&/g')" in
+            case "$(/opt/bin/echo "${ROLE}" | /opt/bin/sed -r 's/[[:upper:]]/\l&/g')" in
                 "server" | "client")
                     break
                     ;;
@@ -81,7 +81,7 @@ case ${#} in
         ;;
 esac
 #
-case "$(/opt/bin/echo "${ROLE}" | /opt/bin/sed -E 's/[[:upper:]]/\l&/g')" in
+case "$(/opt/bin/echo "${ROLE}" | /opt/bin/sed -r 's/[[:upper:]]/\l&/g')" in
     "server")
         /opt/bin/echo -e "($(basename $0)): $$ \033[1;44;37mINFO\033[0m: \033[4mPASSWORD\033[0m: password of local shadowsocks server"
         doubleCheckAndConfirm PASSWORD
@@ -122,45 +122,45 @@ esac
 #
 ########## CONFIGURE SHADOWSOCKS ##########
 #
-case "$(/opt/bin/echo "${ROLE}" | /opt/bin/sed -E 's/[[:upper:]]/\l&/g')" in
+case "$(/opt/bin/echo "${ROLE}" | /opt/bin/sed -r 's/[[:upper:]]/\l&/g')" in
     "server")
         # Modify ${PRIVATE_ETC}/config_server.json
         # 修改${PRIVATE_ETC}/config_server.json
-        /opt/bin/sed -E -i 's#^([[:space:]]+\"password\":).*#\1\"'"${PASSWORD}"'\",#' "${PRIVATE_ETC}/config_server.json"
-        /opt/bin/sed -E -i 's#^([[:space:]]+\"method\":).*#\1\"'"${ENCRYPTION_METHOD}"'\",#' "${PRIVATE_ETC}/config_server.json"
-        /opt/bin/sed -E -i '\#^[[:space:]]+\"plugin\":#d' "${PRIVATE_ETC}/config_server.json"
-        /opt/bin/sed -E -i '\#^[[:space:]]+\"plugin_opts\":#d' "${PRIVATE_ETC}/config_server.json"
+        /opt/bin/sed -r -i 's#^([[:space:]]+\"password\":).*#\1\"'"${PASSWORD}"'\",#' "${PRIVATE_ETC}/config_server.json"
+        /opt/bin/sed -r -i 's#^([[:space:]]+\"method\":).*#\1\"'"${ENCRYPTION_METHOD}"'\",#' "${PRIVATE_ETC}/config_server.json"
+        /opt/bin/sed -r -i '\#^[[:space:]]+\"plugin\":#d' "${PRIVATE_ETC}/config_server.json"
+        /opt/bin/sed -r -i '\#^[[:space:]]+\"plugin_opts\":#d' "${PRIVATE_ETC}/config_server.json"
         NUM_LAST_LINE=$(/opt/bin/sed -ne '/}/=' "${PRIVATE_ETC}/config_server.json")
         NUM_TARGET_LINE=$((${NUM_LAST_LINE}-1))
-        /opt/bin/sed -E -i ''"${NUM_TARGET_LINE}"'s#,$##' "${PRIVATE_ETC}/config_server.json"
+        /opt/bin/sed -r -i ''"${NUM_TARGET_LINE}"'s#,$##' "${PRIVATE_ETC}/config_server.json"
         #
-        if [ "$(/opt/bin/echo "${OBFUSCATION}" | /opt/bin/sed -E 's/[[:upper:]]/\l&/g')" == "enable" ]
+        if [ "$(/opt/bin/echo "${OBFUSCATION}" | /opt/bin/sed -r 's/[[:upper:]]/\l&/g')" == "enable" ]
         then
-            /opt/bin/sed -E -i ''"${NUM_TARGET_LINE}"'s#$#,#' "${PRIVATE_ETC}/config_server.json"
-            /opt/bin/sed -E -i '\#\}#iAAAA\"plugin\":\"obfs-server\",' "${PRIVATE_ETC}/config_server.json"
-            /opt/bin/sed -E -i '\#\}#iAAAA\"plugin_opts\":\"obfs=http\"' "${PRIVATE_ETC}/config_server.json"
-            /opt/bin/sed -E -i 's#^AAAA#    #' "${PRIVATE_ETC}/config_server.json"
+            /opt/bin/sed -r -i ''"${NUM_TARGET_LINE}"'s#$#,#' "${PRIVATE_ETC}/config_server.json"
+            /opt/bin/sed -r -i '\#\}#iAAAA\"plugin\":\"obfs-server\",' "${PRIVATE_ETC}/config_server.json"
+            /opt/bin/sed -r -i '\#\}#iAAAA\"plugin_opts\":\"obfs=http\"' "${PRIVATE_ETC}/config_server.json"
+            /opt/bin/sed -r -i 's#^AAAA#    #' "${PRIVATE_ETC}/config_server.json"
         fi
         ;;
     "client")
         for CONFIG_FOR_CLIENT in "${PRIVATE_ETC}/config_local.json" "${PRIVATE_ETC}/config_redir.json" "${PRIVATE_ETC}/config_tunnel.json"
         do
-            /opt/bin/sed -E -i 's#^([[:space:]]+\"server\":).*#\1\"'"${SERVER_ADDRESS}"'\",#' "${CONFIG_FOR_CLIENT}"
-            /opt/bin/sed -E -i 's#^([[:space:]]+\"server_port\":).*#\1\"'"${SERVER_PORT}"'\",#' "${CONFIG_FOR_CLIENT}"
-            /opt/bin/sed -E -i 's#^([[:space:]]+\"password\":).*#\1\"'"${PASSWORD}"'\",#' "${CONFIG_FOR_CLIENT}"
-            /opt/bin/sed -E -i 's#^([[:space:]]+\"method\":).*#\1\"'"${ENCRYPTION_METHOD}"'\",#' "${CONFIG_FOR_CLIENT}"
-            /opt/bin/sed -E -i '\#^[[:space:]]+\"plugin\":#d' "${CONFIG_FOR_CLIENT}"
-            /opt/bin/sed -E -i '\#^[[:space:]]+\"plugin_opts\":#d' "${CONFIG_FOR_CLIENT}"
+            /opt/bin/sed -r -i 's#^([[:space:]]+\"server\":).*#\1\"'"${SERVER_ADDRESS}"'\",#' "${CONFIG_FOR_CLIENT}"
+            /opt/bin/sed -r -i 's#^([[:space:]]+\"server_port\":).*#\1\"'"${SERVER_PORT}"'\",#' "${CONFIG_FOR_CLIENT}"
+            /opt/bin/sed -r -i 's#^([[:space:]]+\"password\":).*#\1\"'"${PASSWORD}"'\",#' "${CONFIG_FOR_CLIENT}"
+            /opt/bin/sed -r -i 's#^([[:space:]]+\"method\":).*#\1\"'"${ENCRYPTION_METHOD}"'\",#' "${CONFIG_FOR_CLIENT}"
+            /opt/bin/sed -r -i '\#^[[:space:]]+\"plugin\":#d' "${CONFIG_FOR_CLIENT}"
+            /opt/bin/sed -r -i '\#^[[:space:]]+\"plugin_opts\":#d' "${CONFIG_FOR_CLIENT}"
             NUM_LAST_LINE=$(/opt/bin/sed -ne '/}/=' "${CONFIG_FOR_CLIENT}")
             NUM_TARGET_LINE=$((${NUM_LAST_LINE}-1))
-            /opt/bin/sed -E -i ''"${NUM_TARGET_LINE}"'s#,$##' "${CONFIG_FOR_CLIENT}"
+            /opt/bin/sed -r -i ''"${NUM_TARGET_LINE}"'s#,$##' "${CONFIG_FOR_CLIENT}"
             #
-            if [ "$(/opt/bin/echo "${OBFUSCATION}" | /opt/bin/sed -E 's/[[:upper:]]/\l&/g')" == "enable" ]
+            if [ "$(/opt/bin/echo "${OBFUSCATION}" | /opt/bin/sed -r 's/[[:upper:]]/\l&/g')" == "enable" ]
             then
-                /opt/bin/sed -E -i ''"${NUM_TARGET_LINE}"'s#$#,#' "${CONFIG_FOR_CLIENT}"
-                /opt/bin/sed -E -i '\#\}#iAAAA\"plugin\":\"obfs\-local\",' "${CONFIG_FOR_CLIENT}"
-                /opt/bin/sed -E -i '\#\}#iAAAA\"plugin_opts\":\"obfs=http\;obfs\-host=www\.bing\.com\"' "${CONFIG_FOR_CLIENT}"
-                /opt/bin/sed -E -i 's#^AAAA#    #' "${CONFIG_FOR_CLIENT}"
+                /opt/bin/sed -r -i ''"${NUM_TARGET_LINE}"'s#$#,#' "${CONFIG_FOR_CLIENT}"
+                /opt/bin/sed -r -i '\#\}#iAAAA\"plugin\":\"obfs\-local\",' "${CONFIG_FOR_CLIENT}"
+                /opt/bin/sed -r -i '\#\}#iAAAA\"plugin_opts\":\"obfs=http\;obfs\-host=www\.bing\.com\"' "${CONFIG_FOR_CLIENT}"
+                /opt/bin/sed -r -i 's#^AAAA#    #' "${CONFIG_FOR_CLIENT}"
             fi
         done
         ;;

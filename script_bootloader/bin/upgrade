@@ -96,7 +96,7 @@ else
         #
         exit 5
     else
-        DOWNLOAD_LINK="$(sed -E -n -e 's/^[[:space:]]*\"tarball_url\":[[:space:]]*\"(.*)\".*/\1/p' "/tmp/sbl_download_link.html")"
+        DOWNLOAD_LINK="$(sed -r -n -e 's/^[[:space:]]*\"tarball_url\":[[:space:]]*\"(.*)\".*/\1/p' "/tmp/sbl_download_link.html")"
         rm -f "/tmp/sbl_download_link.html"
     fi
 fi

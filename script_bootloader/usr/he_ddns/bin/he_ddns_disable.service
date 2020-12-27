@@ -31,11 +31,11 @@ PRIVATE_ETC="${PRIVATE_ROOT}/etc"
 #
 # FQDN: The FQDN of the target server
 # 设置自定义变量FQDN为目标服务器FQDN
-FQDN="$(/opt/bin/sed -E -n -e 's#^FQDN=\"(.+)\"#\1#p' "${PRIVATE_ETC}/he_ddns.config")"
+FQDN="$(/opt/bin/sed -r -n -e 's#^FQDN=\"(.+)\"#\1#p' "${PRIVATE_ETC}/he_ddns.config")"
 #
 # DDNS_PASSWORD: The password to update the target DNS record
 # 设置自定义变量DDNS_PASSWORD为用于更新目标DNS记录的密码
-DDNS_PASSWORD="$(/opt/bin/sed -E -n -e 's#^DDNS_PASSWORD=\"([[:alnum:]]+)\"#\1#p' "${PRIVATE_ETC}/he_ddns.config")"
+DDNS_PASSWORD="$(/opt/bin/sed -r -n -e 's#^DDNS_PASSWORD=\"([[:alnum:]]+)\"#\1#p' "${PRIVATE_ETC}/he_ddns.config")"
 #
 # INVALID_IPV4_ADDRESS: The invalid IPv4 address used to update the target DNS record
 # 设置自定义变量INVALID_IPV4_ADDRESS为用于更新目标DNS记录的无效IPv4地址

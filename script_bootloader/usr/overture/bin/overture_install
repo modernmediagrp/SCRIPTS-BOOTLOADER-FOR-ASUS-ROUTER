@@ -58,11 +58,11 @@ PRIVATE_USR="${PRIVATE_ROOT}/usr"
 #
 # LATEST_VERSION: Version of the latest overture
 # 设置自定义变量LATEST_VERSION为最新版overture的版本号
-LATEST_VERSION="$(/opt/bin/curl -s "https://api.github.com/repos/shawn1m/overture/releases/latest" | /opt/bin/sed -E -n -e 's/^[[:space:]]*\"tag_name\":[[:space:]]*\"(.*)\".*/\1/p')"
+LATEST_VERSION="$(/opt/bin/curl -s "https://api.github.com/repos/shawn1m/overture/releases/latest" | /opt/bin/sed -r -n -e 's/^[[:space:]]*\"tag_name\":[[:space:]]*\"(.*)\".*/\1/p')"
 #
 # OPERATING_SYSTEM: Operating system of the ASUS Router
 # 设置自定义变量OPERATING_SYSTEM为华硕路由器系统
-OPERATING_SYSTEM="$(/opt/bin/uname | /opt/bin/sed -E 's/[[:upper:]]/\l&/g')"
+OPERATING_SYSTEM="$(/opt/bin/uname | /opt/bin/sed -r 's/[[:upper:]]/\l&/g')"
 #
 # ROUTER_ARCHITECTURE: Architecture of the ASUS Router
 # 设置自定义变量ROUTER_ARCHITECTURE为华硕路由器架构
@@ -92,11 +92,11 @@ DOWNLOAD_LINK="https://github.com/shawn1m/overture/releases/download/${LATEST_VE
 #
 # SS_LOCAL_LOCAL_PORT: Local port of the SS-LOCAL
 # 设置自定义变量SS_LOCAL_LOCAL_PORT为SS-LOCAL的接收端口
-SS_LOCAL_LOCAL_PORT="$(/opt/bin/sed -E -n -e 's/^[[:space:]]*\"local_port\":[[:space:]]*\"(.*)\".*/\1/p' "${SBL_SYS_USR}/shadowsocks/etc/config_local.json")"
+SS_LOCAL_LOCAL_PORT="$(/opt/bin/sed -r -n -e 's/^[[:space:]]*\"local_port\":[[:space:]]*\"(.*)\".*/\1/p' "${SBL_SYS_USR}/shadowsocks/etc/config_local.json")"
 #
 # SS_TUNNEL_LOCAL_PORT: Port of the SS-TUNNEL
 # 设置自定义变量SS_TUNNEL_LOCAL_PORT为SS-TUNNEL的接收端口
-SS_TUNNEL_LOCAL_PORT="$(/opt/bin/sed -E -n -e 's/^[[:space:]]*\"local_port\":[[:space:]]*\"(.*)\".*/\1/p' "${SBL_SYS_USR}/shadowsocks/etc/config_tunnel.json")"
+SS_TUNNEL_LOCAL_PORT="$(/opt/bin/sed -r -n -e 's/^[[:space:]]*\"local_port\":[[:space:]]*\"(.*)\".*/\1/p' "${SBL_SYS_USR}/shadowsocks/etc/config_tunnel.json")"
 #
 ########## END ##########
 #
@@ -178,8 +178,8 @@ then
         # Configure overture
         # 配置overture
         /opt/bin/cp -f "${PRIVATE_ETC}/config.json.template" "${PRIVATE_ETC}/config.json"
-        /opt/bin/sed -E -i '/^[[:space:]]+\"BindAddress\":/s/[[:digit:]]+/'"${SS_TUNNEL_LOCAL_PORT}"'/' "${PRIVATE_ETC}/config.json"
-        /opt/bin/sed -E -i '/^[[:space:]]+\"SOCKS5Address\":/s/[[:digit:].:]{2,}/127.0.0.1:'"${SS_LOCAL_LOCAL_PORT}"'/' "${PRIVATE_ETC}/config.json"
+        /opt/bin/sed -r -i '/^[[:space:]]+\"BindAddress\":/s/[[:digit:]]+/'"${SS_TUNNEL_LOCAL_PORT}"'/' "${PRIVATE_ETC}/config.json"
+        /opt/bin/sed -r -i '/^[[:space:]]+\"SOCKS5Address\":/s/[[:digit:].:]{2,}/127.0.0.1:'"${SS_LOCAL_LOCAL_PORT}"'/' "${PRIVATE_ETC}/config.json"
         #
         # Configure dnsmasq.d
         # 配置dnsmasq.d
